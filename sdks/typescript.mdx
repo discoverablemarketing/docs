@@ -1,0 +1,172 @@
+---
+title: "TypeScript SDK"
+description: "Install and use the ChatAds TypeScript/JavaScript SDK"
+---
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @chat-ads/chatads-sdk
+```
+
+```bash yarn
+yarn add @chat-ads/chatads-sdk
+```
+
+```bash pnpm
+pnpm add @chat-ads/chatads-sdk
+```
+
+</CodeGroup>
+
+## Quick Start
+
+```typescript
+import { ChatAdsClient } from '@chat-ads/chatads-sdk';
+
+const client = new ChatAdsClient({
+  apiKey: process.env.CHATADS_API_KEY
+});
+
+const response = await client.analyzeMessage({
+  message: "What are the best noise-cancelling headphones?",
+  country: "US",
+  language: "en"
+});
+
+if (response.success && response.data.matched) {
+  console.log(`Product: ${response.data.ad.product}`);
+  console.log(`Link: ${response.data.ad.link}`);
+}
+```
+
+## Configuration Options
+
+```typescript
+const client = new ChatAdsClient({
+  apiKey: 'cak_your_api_key',       // Required
+  baseUrl: 'https://...',            // Optional: custom API URL
+  timeout: 30000,                    // Optional: request timeout in ms
+});
+```
+
+## Methods
+
+### analyzeMessage
+
+Analyze a message for affiliate opportunities.
+
+```typescript
+const response = await client.analyzeMessage({
+  message: "Looking for a good yoga mat",
+  country: "US",
+  language: "en",
+  message_analysis: "balanced",    // fast | balanced | thorough
+  fill_priority: "coverage",       // speed | coverage
+  min_intent: "low"                // any | low | medium | high
+});
+```
+
+## Response Types
+
+```typescript
+interface ChatAdsResponse {
+  success: boolean;
+  data: {
+    matched: boolean;
+    filled: boolean;
+    ad: {
+      product: string;
+      link: string;
+      message: string;
+      category: string;
+    } | null;
+    keyword: string | null;
+    intent_score: number | null;
+  } | null;
+  error: {
+    code: string;
+    message: string;
+    details: Record<string, any>;
+  } | null;
+  meta: {
+    request_id: string;
+    country: string;
+    language: string;
+    usage: {
+      monthly_requests: number;
+      daily_requests: number;
+      daily_limit: number;
+    };
+  };
+}
+```
+
+## Error Handling
+
+```typescript
+try {
+  const response = await client.analyzeMessage({ message: "..." });
+
+  if (!response.success) {
+    switch (response.error?.code) {
+      case 'RATE_LIMIT_EXCEEDED':
+        // Wait and retry
+        break;
+      case 'UNAUTHORIZED':
+        // Check API key
+        break;
+      default:
+        console.error(response.error?.message);
+    }
+  }
+} catch (error) {
+  console.error('Network error:', error);
+}
+```
+
+## Framework Examples
+
+### Next.js API Route
+
+```typescript
+// app/api/affiliate/route.ts
+import { ChatAdsClient } from '@chat-ads/chatads-sdk';
+import { NextResponse } from 'next/server';
+
+const client = new ChatAdsClient({
+  apiKey: process.env.CHATADS_API_KEY!
+});
+
+export async function POST(request: Request) {
+  const { message } = await request.json();
+
+  const response = await client.analyzeMessage({
+    message,
+    country: "US"
+  });
+
+  return NextResponse.json(response);
+}
+```
+
+### Express.js
+
+```typescript
+import express from 'express';
+import { ChatAdsClient } from '@chat-ads/chatads-sdk';
+
+const app = express();
+const client = new ChatAdsClient({
+  apiKey: process.env.CHATADS_API_KEY!
+});
+
+app.post('/analyze', async (req, res) => {
+  const response = await client.analyzeMessage({
+    message: req.body.message
+  });
+  res.json(response);
+});
+```

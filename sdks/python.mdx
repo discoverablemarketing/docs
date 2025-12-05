@@ -1,0 +1,175 @@
+---
+title: "Python SDK"
+description: "Install and use the ChatAds Python SDK"
+---
+
+## Installation
+
+```bash
+pip install chatads-sdk
+```
+
+## Quick Start
+
+```python
+from chatads import ChatAdsClient
+
+client = ChatAdsClient(api_key="cak_your_api_key")
+
+response = client.analyze_message(
+    message="What are the best noise-cancelling headphones?",
+    country="US",
+    language="en"
+)
+
+if response.success and response.data.matched:
+    print(f"Product: {response.data.ad.product}")
+    print(f"Link: {response.data.ad.link}")
+```
+
+## Configuration
+
+```python
+from chatads import ChatAdsClient
+
+client = ChatAdsClient(
+    api_key="cak_your_api_key",     # Required
+    base_url="https://...",          # Optional: custom API URL
+    timeout=30,                      # Optional: request timeout in seconds
+)
+```
+
+## Methods
+
+### analyze_message
+
+Analyze a message for affiliate opportunities.
+
+```python
+response = client.analyze_message(
+    message="Looking for a good yoga mat",
+    country="US",
+    language="en",
+    message_analysis="balanced",    # fast | balanced | thorough
+    fill_priority="coverage",       # speed | coverage
+    min_intent="low"                # any | low | medium | high
+)
+```
+
+## Response Structure
+
+```python
+# response.success: bool
+# response.data.matched: bool
+# response.data.filled: bool
+# response.data.ad.product: str
+# response.data.ad.link: str
+# response.data.ad.message: str
+# response.data.ad.category: str
+# response.data.keyword: str
+# response.meta.request_id: str
+# response.meta.usage.monthly_requests: int
+# response.meta.usage.daily_requests: int
+```
+
+## Error Handling
+
+```python
+from chatads import ChatAdsClient, ChatAdsError
+
+client = ChatAdsClient(api_key="cak_your_api_key")
+
+try:
+    response = client.analyze_message(message="...")
+
+    if not response.success:
+        if response.error.code == "RATE_LIMIT_EXCEEDED":
+            # Wait and retry
+            pass
+        elif response.error.code == "UNAUTHORIZED":
+            # Check API key
+            pass
+        else:
+            print(f"Error: {response.error.message}")
+
+except ChatAdsError as e:
+    print(f"API error: {e}")
+except Exception as e:
+    print(f"Network error: {e}")
+```
+
+## Framework Examples
+
+### FastAPI
+
+```python
+from fastapi import FastAPI
+from chatads import ChatAdsClient
+import os
+
+app = FastAPI()
+client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+
+@app.post("/analyze")
+async def analyze(message: str):
+    response = client.analyze_message(
+        message=message,
+        country="US"
+    )
+    return response.dict()
+```
+
+### Flask
+
+```python
+from flask import Flask, request, jsonify
+from chatads import ChatAdsClient
+import os
+
+app = Flask(__name__)
+client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.get_json()
+    response = client.analyze_message(
+        message=data["message"]
+    )
+    return jsonify(response.dict())
+```
+
+### Django
+
+```python
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from chatads import ChatAdsClient
+import json
+import os
+
+client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+
+@require_POST
+def analyze(request):
+    data = json.loads(request.body)
+    response = client.analyze_message(
+        message=data["message"]
+    )
+    return JsonResponse(response.dict())
+```
+
+## Environment Variables
+
+We recommend storing your API key in environment variables:
+
+```python
+import os
+from chatads import ChatAdsClient
+
+client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+```
+
+```bash
+export CHATADS_API_KEY=cak_your_api_key
+```

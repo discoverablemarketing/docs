@@ -1,0 +1,143 @@
+---
+title: "MCP Integration"
+description: "Use ChatAds with AI assistants via Model Context Protocol"
+---
+
+## Overview
+
+ChatAds supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for seamless integration with AI assistants like Claude, GPT, and others.
+
+## MCP Wrapper SDK
+
+Install the ChatAds MCP wrapper:
+
+```bash
+npm install chatads-mcp-wrapper
+```
+
+## Configuration
+
+Add ChatAds to your MCP server configuration:
+
+```json
+{
+  "mcpServers": {
+    "chatads": {
+      "command": "npx",
+      "args": ["chatads-mcp-wrapper"],
+      "env": {
+        "CHATADS_API_KEY": "cak_your_api_key"
+      }
+    }
+  }
+}
+```
+
+## Available Tools
+
+### chatads_analyze
+
+Analyze a message for affiliate product recommendations.
+
+**Parameters:**
+- `message` (required): The user message to analyze
+- `country` (optional): ISO country code
+- `language` (optional): ISO language code
+
+**Example Usage in AI Assistant:**
+
+```
+User: Can you find me affiliate links for yoga mats?
+Assistant: [Uses chatads_analyze tool]
+```
+
+## Integration Examples
+
+### Claude Desktop
+
+Add to your Claude Desktop config (`~/.config/claude/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "chatads": {
+      "command": "npx",
+      "args": ["chatads-mcp-wrapper"],
+      "env": {
+        "CHATADS_API_KEY": "cak_your_api_key"
+      }
+    }
+  }
+}
+```
+
+### Custom MCP Server
+
+```typescript
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { ChatAdsClient } from "@chat-ads/chatads-sdk";
+
+const client = new ChatAdsClient({
+  apiKey: process.env.CHATADS_API_KEY
+});
+
+const server = new Server({
+  name: "chatads",
+  version: "1.0.0"
+});
+
+server.setRequestHandler("tools/call", async (request) => {
+  if (request.params.name === "chatads_analyze") {
+    const { message, country, language } = request.params.arguments;
+
+    const response = await client.analyzeMessage({
+      message,
+      country,
+      language
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify(response, null, 2)
+      }]
+    };
+  }
+});
+```
+
+## Response Format
+
+The MCP tool returns the standard ChatAds response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "matched": true,
+    "ad": {
+      "product": "Yoga Mat",
+      "link": "https://amazon.com/...",
+      "message": "Perfect for beginners",
+      "category": "fitness"
+    }
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use in server context" icon="server">
+    MCP servers run server-side, keeping your API key secure.
+  </Card>
+  <Card title="Handle errors gracefully" icon="shield">
+    Implement proper error handling for rate limits and network issues.
+  </Card>
+  <Card title="Cache when possible" icon="database">
+    Consider caching responses for repeated queries to save API calls.
+  </Card>
+  <Card title="Set appropriate timeouts" icon="clock">
+    Configure reasonable timeouts for the MCP tool calls.
+  </Card>
+</CardGroup>

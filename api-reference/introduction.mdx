@@ -1,33 +1,66 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Introduction"
+description: "Overview of the ChatAds API"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Base URL
 
-## Welcome
+All API requests should be made to:
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+```
+https://chatads--chatads-api-fastapiserver-serve.modal.run
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API endpoints require authentication via the `X-API-Key` header.
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages
+```
+
+Get your API key from [app.getchatads.com/settings/api-keys](https://app.getchatads.com/settings/api-keys).
+
+## Request Format
+
+All requests should:
+- Use `Content-Type: application/json`
+- Include the `X-API-Key` header
+- Send data in JSON format
+
+## Response Format
+
+All responses follow this structure:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "success": boolean,
+  "data": object | null,
+  "error": object | null,
+  "meta": {
+    "request_id": string,
+    "country": string,
+    "language": string,
+    "usage": object
   }
-]
+}
 ```
+
+## Endpoints
+
+<Card
+  title="POST /v1/chatads/messages"
+  icon="paper-plane"
+  href="/api-reference/messages"
+>
+  Analyze a message for affiliate opportunities
+</Card>
+
+## Error Handling
+
+See [Error Handling](/guides/error-handling) for details on error codes and responses.
+
+## Rate Limits
+
+See [Rate Limits](/guides/rate-limits) for information about request quotas.

@@ -1,0 +1,75 @@
+---
+title: "Authentication"
+description: "Learn how to authenticate your ChatAds API requests"
+---
+
+## API Keys
+
+All ChatAds API requests require authentication via an API key passed in the `X-API-Key` header.
+
+```bash
+curl -H "X-API-Key: cak_your_api_key_here" \
+  https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages
+```
+
+## Getting Your API Key
+
+1. Log into [app.getchatads.com](https://app.getchatads.com)
+2. Navigate to **Settings** → **API Keys**
+3. Click **Create API Key**
+4. Give your key a descriptive name
+5. Copy the key (starts with `cak_`)
+
+<Warning>
+  API keys are shown only once. Store them securely immediately after creation.
+</Warning>
+
+## API Key Format
+
+ChatAds API keys follow this format:
+
+```
+cak_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+- Prefix: `cak_` (ChatAds Key)
+- 32 random characters
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never expose in client-side code" icon="eye-slash">
+    Keep API keys server-side only. Never include them in browser JavaScript, mobile apps, or public repositories.
+  </Card>
+  <Card title="Use environment variables" icon="terminal">
+    Store API keys in environment variables, not hardcoded in source code.
+  </Card>
+  <Card title="Rotate keys regularly" icon="rotate">
+    Create new keys periodically and revoke old ones.
+  </Card>
+  <Card title="Use separate keys per environment" icon="layer-group">
+    Use different keys for development, staging, and production.
+  </Card>
+</CardGroup>
+
+## Managing API Keys
+
+### Revoking Keys
+
+To revoke an API key:
+1. Go to **Settings** → **API Keys**
+2. Find the key you want to revoke
+3. Click **Revoke**
+
+<Warning>
+  Revoked keys immediately stop working. Make sure to update your applications before revoking a key.
+</Warning>
+
+## Team API Keys
+
+API keys belong to your team, not individual users. All team members with appropriate permissions can:
+- Create new API keys
+- View existing keys (masked)
+- Revoke keys
+
+Rate limits are shared across all API keys for a team.

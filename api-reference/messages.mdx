@@ -1,0 +1,161 @@
+---
+title: "Analyze Message"
+api: "POST /v1/chatads/messages"
+description: "Analyze a user message for affiliate opportunities"
+---
+
+Analyzes a user message to extract product keywords and return relevant affiliate links.
+
+## Request Body
+
+<ParamField body="message" type="string" required>
+  The user message to analyze. Required, 1-5000 characters.
+</ParamField>
+
+<ParamField body="country" type="string">
+  ISO 3166-1 alpha-2 country code for geo-targeting (e.g., "US", "GB", "DE").
+</ParamField>
+
+<ParamField body="language" type="string">
+  ISO 639-1 language code (e.g., "en", "es", "de").
+</ParamField>
+
+<ParamField body="message_analysis" type="string" default="balanced">
+  Controls keyword extraction method:
+  - `fast` - NLP-only extraction (~50ms)
+  - `balanced` - Hybrid NLP/LLM approach (~150ms)
+  - `thorough` - Deeper LLM extraction (~300ms)
+</ParamField>
+
+<ParamField body="fill_priority" type="string" default="coverage">
+  Controls URL resolution fallback:
+  - `speed` - Skip Serper fallback (faster)
+  - `coverage` - Full resolution chain (more matches)
+</ParamField>
+
+<ParamField body="min_intent" type="string" default="low">
+  Minimum purchase intent level:
+  - `any` - No filtering
+  - `low` - Filter garbage queries
+  - `medium` - Balanced quality/fill
+  - `high` - Premium queries only
+</ParamField>
+
+<ParamField body="skip_message_analysis" type="boolean" default="false">
+  When `true`, skips NLP/LLM extraction and uses the message content directly as the search query.
+  This bypasses `message_analysis`, `fill_priority`, and `min_intent` settings.
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean" required>
+  Whether the request was processed successfully.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  <Expandable title="properties">
+    <ResponseField name="matched" type="boolean" required>
+      Whether a product keyword was identified.
+    </ResponseField>
+    <ResponseField name="filled" type="boolean">
+      Whether an affiliate link was resolved.
+    </ResponseField>
+    <ResponseField name="ad" type="object">
+      <Expandable title="properties">
+        <ResponseField name="product" type="string">Product name</ResponseField>
+        <ResponseField name="link" type="string">Affiliate link URL</ResponseField>
+        <ResponseField name="message" type="string">Marketing message</ResponseField>
+        <ResponseField name="category" type="string">Product category</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="keyword" type="string">
+      The extracted product keyword.
+    </ResponseField>
+    <ResponseField name="intent_score" type="number">
+      Purchase intent score (0.0 to 1.0).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  <Expandable title="properties">
+    <ResponseField name="request_id" type="string" required>
+      Unique request ID for debugging.
+    </ResponseField>
+    <ResponseField name="country" type="string">Detected/provided country</ResponseField>
+    <ResponseField name="language" type="string">Detected/provided language</ResponseField>
+    <ResponseField name="extraction_method" type="string">Method used: llm, nlp, or skip</ResponseField>
+    <ResponseField name="usage" type="object">Usage statistics</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: YOUR_API_KEY' \
+  -d '{
+    "message": "What are the best noise-cancelling headphones?",
+    "country": "US",
+    "language": "en",
+    "message_analysis": "balanced"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json Success Response
+{
+  "success": true,
+  "data": {
+    "matched": true,
+    "filled": true,
+    "ad": {
+      "product": "Noise-Cancelling Headphones",
+      "link": "https://www.amazon.com/dp/B0XXXXXXXXX?tag=yourtag-20",
+      "message": "Block out distractions with premium ANC headphones.",
+      "category": "electronics"
+    },
+    "keyword": "noise-cancelling headphones",
+    "intent_score": 0.85,
+    "intent_level": "high"
+  },
+  "meta": {
+    "request_id": "d6a8f6f2-3b5a-4f0a-81ab-1b4a4c9dd5ea",
+    "country": "US",
+    "language": "en",
+    "extraction_method": "llm",
+    "message_analysis_used": "balanced",
+    "fill_priority_used": "coverage",
+    "min_intent_used": "low",
+    "usage": {
+      "monthly_requests": 250,
+      "daily_requests": 20,
+      "daily_limit": 100,
+      "is_free_tier": true,
+      "free_tier_limit": 100,
+      "free_tier_remaining": 0
+    }
+  }
+}
+```
+
+```json Error Response
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "DAILY_QUOTA_EXCEEDED",
+    "message": "Daily request limit exceeded. You've used 120 of 100 requests for today.",
+    "details": {
+      "daily_limit": 100,
+      "daily_usage": 120,
+      "plan": "free"
+    }
+  },
+  "meta": {
+    "request_id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890"
+  }
+}
+```
+</ResponseExample>

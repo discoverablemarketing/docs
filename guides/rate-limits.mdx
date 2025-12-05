@@ -1,0 +1,83 @@
+---
+title: "Rate Limits"
+description: "Understand ChatAds API rate limits and quotas"
+---
+
+## Overview
+
+ChatAds uses rate limiting to ensure fair usage and service stability. Limits are applied per team and shared across all API keys.
+
+## Rate Limit Tiers
+
+| Plan | Monthly Requests | Daily Requests |
+|------|-----------------|----------------|
+| Free | 100 | 10 |
+| Starter | 5,000 | 500 |
+| Pro | 50,000 | 5,000 |
+| Enterprise | Custom | Custom |
+
+## Rate Limit Headers
+
+Each response includes rate limit information in the `meta.usage` object:
+
+```json
+{
+  "meta": {
+    "usage": {
+      "monthly_requests": 250,
+      "daily_requests": 20,
+      "daily_limit": 100,
+      "is_free_tier": true,
+      "free_tier_limit": 100,
+      "free_tier_remaining": 0
+    }
+  }
+}
+```
+
+## Rate Limit Errors
+
+When you exceed your rate limits, you'll receive a `429` error:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Daily request limit exceeded. You've used 120 of 100 requests for today.",
+    "details": {
+      "daily_limit": 100,
+      "daily_usage": 120,
+      "reset_at": "2024-01-02T00:00:00Z"
+    }
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Monitor usage" icon="chart-line">
+    Track your `usage` values to avoid hitting limits unexpectedly.
+  </Card>
+  <Card title="Implement backoff" icon="clock">
+    When rate limited, wait before retrying. Use exponential backoff.
+  </Card>
+  <Card title="Cache responses" icon="database">
+    Cache affiliate responses for identical queries to reduce API calls.
+  </Card>
+  <Card title="Upgrade when needed" icon="arrow-up">
+    If you consistently hit limits, consider upgrading your plan.
+  </Card>
+</CardGroup>
+
+## Upgrading Your Plan
+
+To increase your rate limits:
+1. Go to [app.getchatads.com/settings/billing](https://app.getchatads.com/settings/billing)
+2. Select a higher tier plan
+3. Complete the upgrade
+
+<Info>
+  Plan changes take effect immediately. Your new limits are available right away.
+</Info>

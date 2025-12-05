@@ -1,0 +1,128 @@
+---
+title: "Error Handling"
+description: "Handle ChatAds API errors gracefully"
+---
+
+## Error Response Format
+
+All errors follow this structure:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {}
+  },
+  "meta": {
+    "request_id": "d6a8f6f2-3b5a-4f0a-81ab-1b4a4c9dd5ea"
+  }
+}
+```
+
+## Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `INVALID_INPUT` | 400 | Request body is missing or malformed |
+| `UNAUTHORIZED` | 401 | Missing API key |
+| `FORBIDDEN` | 403 | Invalid or disabled API key |
+| `CONTENT_BLOCKED` | 422 | Message contains blocked content |
+| `RATE_LIMIT_EXCEEDED` | 429 | Rate limit exceeded |
+| `DAILY_QUOTA_EXCEEDED` | 429 | Daily request limit exceeded |
+| `MONTHLY_QUOTA_EXCEEDED` | 429 | Monthly request limit exceeded |
+| `INTERNAL_ERROR` | 500 | Server error |
+| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+
+## Common Errors
+
+### Missing API Key (401)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "A valid API key must be supplied in the x-api-key header."
+  }
+}
+```
+
+**Solution:** Add your API key to the `X-API-Key` header.
+
+### Invalid API Key (403)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Invalid API key."
+  }
+}
+```
+
+**Solution:** Check that your API key is correct and not revoked.
+
+### Rate Limit Exceeded (429)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DAILY_QUOTA_EXCEEDED",
+    "message": "Daily request limit exceeded. You've used 120 of 100 requests for today.",
+    "details": {
+      "daily_limit": 100,
+      "daily_usage": 120,
+      "plan": "free"
+    }
+  }
+}
+```
+
+**Solution:** Wait for the rate limit to reset or upgrade your plan.
+
+## Handling Errors in Code
+
+<CodeGroup>
+
+```typescript TypeScript
+try {
+  const response = await client.analyzeMessage({ message: "..." });
+
+  if (!response.success) {
+    console.error(`Error: ${response.error.code}`);
+    console.error(`Message: ${response.error.message}`);
+    // Handle specific error codes
+    if (response.error.code === 'RATE_LIMIT_EXCEEDED') {
+      // Implement backoff
+    }
+  }
+} catch (error) {
+  console.error('Network error:', error);
+}
+```
+
+```python Python
+try:
+    response = client.analyze_message(message="...")
+
+    if not response.success:
+        print(f"Error: {response.error.code}")
+        print(f"Message: {response.error.message}")
+        # Handle specific error codes
+        if response.error.code == 'RATE_LIMIT_EXCEEDED':
+            # Implement backoff
+            pass
+except Exception as e:
+    print(f"Network error: {e}")
+```
+
+</CodeGroup>
+
+## Request IDs
+
+Every response includes a `request_id` in the `meta` object. Include this ID when contacting support for faster issue resolution.

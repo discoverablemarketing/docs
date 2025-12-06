@@ -1,4 +1,4 @@
-# Mintlify Starter Kit
+# ChatAds Starter Kit
 
 Use the starter kit to get your docs deployed and ready to customize.
 

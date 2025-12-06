@@ -29,8 +29,7 @@ curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chat
   -H 'X-API-Key: YOUR_API_KEY' \
   -d '{
     "message": "What are the best noise-cancelling headphones?",
-    "country": "US",
-    "language": "en"
+    "country": "US"
   }'
 ```
 
@@ -41,8 +40,7 @@ const client = new ChatAdsClient({ apiKey: 'YOUR_API_KEY' });
 
 const response = await client.analyzeMessage({
   message: "What are the best noise-cancelling headphones?",
-  country: "US",
-  language: "en"
+  country: "US"
 });
 
 console.log(response.data);
@@ -55,8 +53,7 @@ client = ChatAdsClient(api_key="YOUR_API_KEY")
 
 response = client.analyze_message(
     message="What are the best noise-cancelling headphones?",
-    country="US",
-    language="en"
+    country="US"
 )
 
 print(response.data)

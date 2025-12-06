@@ -1,0 +1,452 @@
+---
+title: "Troubleshooting"
+description: "Diagnose and resolve common ChatAds integration issues"
+---
+
+## Error Code Reference
+
+Every ChatAds error includes a code, message, and optional details. Here's how to resolve each one:
+
+### Authentication Errors
+
+<AccordionGroup>
+
+<Accordion title="UNAUTHORIZED (401)" icon="lock">
+**Cause:** No API key provided in the request.
+
+**Solution:**
+```bash
+# Add the X-API-Key header
+curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
+  -H 'X-API-Key: cak_your_api_key' \
+  -H 'Content-Type: application/json' \
+  -d '{"message": "test"}'
+```
+
+**Checklist:**
+- [ ] Header name is exactly `X-API-Key` (case-sensitive)
+- [ ] No "Bearer" prefix—just the key value
+- [ ] Key is not empty or whitespace
+</Accordion>
+
+<Accordion title="FORBIDDEN (403)" icon="ban">
+**Cause:** API key is invalid or disabled.
+
+**Solution:**
+1. Verify your key starts with `cak_`
+2. Check if the key was revoked at [app.getchatads.com/settings/api-keys](https://app.getchatads.com/settings/api-keys)
+3. Generate a new key if needed
+
+**Common causes:**
+- Typo in the API key
+- Key was regenerated (old key no longer valid)
+- Team account suspended
+</Accordion>
+
+<Accordion title="API_KEY_DISABLED (403)" icon="circle-xmark">
+**Cause:** The API key has been explicitly disabled.
+
+**Solution:**
+Re-enable the key in the dashboard or generate a new one at [app.getchatads.com/settings/api-keys](https://app.getchatads.com/settings/api-keys).
+</Accordion>
+
+</AccordionGroup>
+
+### Input Validation Errors
+
+<AccordionGroup>
+
+<Accordion title="INVALID_INPUT (400)" icon="triangle-exclamation">
+**Cause:** Request body is missing or malformed.
+
+**Solution:**
+```json
+// Correct format
+{
+  "message": "What's a good yoga mat?"
+}
+
+// NOT this (empty message)
+{
+  "message": ""
+}
+
+// NOT this (missing message)
+{
+  "country": "US"
+}
+```
+
+**Checklist:**
+- [ ] `Content-Type: application/json` header is set
+- [ ] Request body is valid JSON
+- [ ] `message` field is present and non-empty
+</Accordion>
+
+<Accordion title="MESSAGE_TOO_LONG (400)" icon="text-width">
+**Cause:** Message exceeds 5000 characters.
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "MESSAGE_TOO_LONG",
+    "details": {
+      "max_length": 5000,
+      "actual_length": 6234
+    }
+  }
+}
+```
+
+**Solution:**
+Truncate or summarize the message. For long conversations, send only the relevant portion:
+
+```typescript
+const message = userMessage.slice(0, 5000);
+```
+</Accordion>
+
+</AccordionGroup>
+
+### Content Restriction Errors
+
+<AccordionGroup>
+
+<Accordion title="CONTENT_BLOCKED (422)" icon="filter">
+**Cause:** Message contains a keyword blocked by your team's rules.
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "CONTENT_BLOCKED",
+    "details": {
+      "keyword": "competitor-product",
+      "reason": "Product not in our catalog"
+    }
+  }
+}
+```
+
+**Solution:**
+1. Review blocked keywords at [app.getchatads.com/settings/rules](https://app.getchatads.com/settings/rules)
+2. Remove the rule if blocking was unintended
+3. This request does NOT count against your quota
+</Accordion>
+
+<Accordion title="GEO_BLOCKED (422)" icon="globe">
+**Cause:** Request originated from a disallowed country.
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "GEO_BLOCKED",
+    "details": {
+      "country": "CN",
+      "allowed_countries": ["US", "CA", "GB"],
+      "ip": "203.0.113.1"
+    }
+  }
+}
+```
+
+**Solution:**
+1. Review geo-restrictions in your team settings
+2. Pass the correct `country` parameter to override IP detection
+3. This request does NOT count against your quota
+</Accordion>
+
+</AccordionGroup>
+
+### Rate Limit Errors
+
+<AccordionGroup>
+
+<Accordion title="DAILY_QUOTA_EXCEEDED (429)" icon="calendar-day">
+**Cause:** Daily request limit reached.
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "DAILY_QUOTA_EXCEEDED",
+    "details": {
+      "daily_usage": 101,
+      "daily_limit": 100,
+      "plan": "free"
+    }
+  }
+}
+```
+
+**Solution:**
+- Wait until midnight UTC for reset
+- Upgrade your plan for higher limits
+- Check `Retry-After` header for seconds until reset
+
+```typescript
+if (response.error?.code === 'DAILY_QUOTA_EXCEEDED') {
+  const retryAfter = response.headers.get('Retry-After');
+  console.log(`Retry after ${retryAfter} seconds`);
+}
+```
+</Accordion>
+
+<Accordion title="MONTHLY_QUOTA_EXCEEDED (429)" icon="calendar">
+**Cause:** Monthly request limit reached (free tier only).
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "MONTHLY_QUOTA_EXCEEDED",
+    "details": {
+      "monthly_usage": 101,
+      "monthly_cap": 100,
+      "plan": "free"
+    }
+  }
+}
+```
+
+**Solution:**
+- Wait until the 1st of next month
+- Upgrade to a paid plan (unlimited monthly)
+</Accordion>
+
+<Accordion title="RATE_LIMIT_EXCEEDED (429)" icon="gauge-high">
+**Cause:** Too many requests per minute.
+
+**Solution:**
+Implement exponential backoff:
+
+```typescript
+async function withRetry(fn: () => Promise<any>, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const result = await fn();
+
+    if (result.success) return result;
+
+    if (result.error?.code === 'RATE_LIMIT_EXCEEDED') {
+      const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+      await new Promise(r => setTimeout(r, delay));
+      continue;
+    }
+
+    throw new Error(result.error?.message);
+  }
+}
+```
+</Accordion>
+
+</AccordionGroup>
+
+### Server Errors
+
+<AccordionGroup>
+
+<Accordion title="INTERNAL_ERROR (500)" icon="server">
+**Cause:** Unexpected server error.
+
+**Solution:**
+1. Retry the request after a short delay
+2. If persistent, check [status.getchatads.com](https://status.getchatads.com) for outages
+3. Contact support@getchatads.com with your `request_id`
+
+```typescript
+if (response.error?.code === 'INTERNAL_ERROR') {
+  console.error('Request ID for support:', response.meta?.request_id);
+}
+```
+</Accordion>
+
+<Accordion title="SERVICE_UNAVAILABLE (503)" icon="plug-circle-xmark">
+**Cause:** Service temporarily unavailable.
+
+**Solution:**
+- Retry after 30-60 seconds
+- Check status page for maintenance windows
+- This is typically brief (< 5 minutes)
+</Accordion>
+
+<Accordion title="RATE_LIMIT_UNAVAILABLE (503)" icon="database">
+**Cause:** Rate limiting backend temporarily unavailable.
+
+**Solution:**
+This is rare and usually resolves within seconds. Retry with backoff.
+</Accordion>
+
+</AccordionGroup>
+
+---
+
+## Common Integration Issues
+
+### No Matches Found
+
+<Card title="matched: false in response">
+
+**Symptoms:** API returns successfully but `data.matched` is `false`.
+
+**Possible causes:**
+
+1. **No product detected** - The message doesn't contain a clear product reference
+   ```json
+   // This won't match
+   { "message": "Hello, how are you?" }
+
+   // This will match
+   { "message": "What's a good yoga mat for beginners?" }
+   ```
+
+2. **Intent score too low** - Query filtered by `min_intent`
+   ```json
+   // Check if intent was filtered
+   {
+     "data": {
+       "matched": false,
+       "reason": "Intent score below threshold",
+       "min_intent_required": "medium"
+     }
+   }
+   ```
+
+3. **No affiliate available** - Product identified but no affiliate link exists
+
+**Solutions:**
+- Lower `min_intent` (try `"any"` for testing)
+- Use more specific product queries
+- Check the `reason` field for specifics
+
+</Card>
+
+### Slow Response Times
+
+<Card title="API latency exceeds expectations">
+
+**Expected latencies:**
+| Configuration | Typical Latency |
+|--------------|-----------------|
+| `fast` + `speed` | 50-100ms |
+| `balanced` + `coverage` | 150-300ms |
+| `thorough` + `coverage` | 300-500ms |
+
+**If consistently slow:**
+
+1. **Check your configuration**
+   ```json
+   {
+     "message": "...",
+     "message_analysis": "fast",
+     "fill_priority": "speed"
+   }
+   ```
+
+2. **Use skip_message_analysis for known products**
+   ```json
+   {
+     "message": "wireless running headphones",
+     "skip_message_analysis": true
+   }
+   ```
+
+3. **Check network latency** - API is hosted on Modal (US regions)
+
+4. **Cache responses** - Same queries return same results
+
+</Card>
+
+### SDK Issues
+
+<Card title="SDK not working as expected">
+
+**TypeScript SDK:**
+```typescript
+// Ensure you're awaiting the response
+const response = await client.analyzeMessage({ message: "..." });
+
+// Check both success AND data
+if (response.success && response.data?.matched) {
+  // Use the affiliate link
+}
+```
+
+**Python SDK:**
+```python
+# Use attribute access, not dictionary access
+response = client.analyze_message(message="...")
+
+if response.success and response.data.matched:
+    print(response.data.ad.link)  # Correct
+    # print(response.data['ad']['link'])  # Wrong
+```
+
+**Common issues:**
+- Not handling `data: null` when `success: false`
+- Not checking `matched` before accessing `ad`
+- Using wrong import path
+
+</Card>
+
+---
+
+## Debug Checklist
+
+When troubleshooting, work through this checklist:
+
+<Steps>
+  <Step title="Verify API key">
+    ```bash
+    # Test with curl
+    curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
+      -H 'X-API-Key: YOUR_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{"message": "best yoga mat"}'
+    ```
+  </Step>
+  <Step title="Check response structure">
+    Always check `success` field first:
+    ```typescript
+    if (!response.success) {
+      console.error('Error:', response.error?.code, response.error?.message);
+      return;
+    }
+    ```
+  </Step>
+  <Step title="Log the request_id">
+    Every response includes a unique ID for debugging:
+    ```typescript
+    console.log('Request ID:', response.meta?.request_id);
+    ```
+    Include this when contacting support.
+  </Step>
+  <Step title="Check usage">
+    Verify you haven't hit rate limits:
+    ```typescript
+    console.log('Usage:', response.meta?.usage);
+    ```
+  </Step>
+  <Step title="Review configuration">
+    Ensure parameters match your expectations:
+    ```typescript
+    console.log('Analysis used:', response.meta?.message_analysis_used);
+    console.log('Fill priority:', response.meta?.fill_priority_used);
+    console.log('Min intent:', response.meta?.min_intent_used);
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="Email Support" icon="envelope" href="mailto:support@getchatads.com">
+    support@getchatads.com — Include your request_id for faster resolution.
+  </Card>
+  <Card title="API Explorer" icon="flask" href="https://app.getchatads.com/api-explorer">
+    Test API calls directly in your browser with real-time responses.
+  </Card>
+</CardGroup>

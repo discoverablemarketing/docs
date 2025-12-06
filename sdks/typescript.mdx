@@ -32,8 +32,7 @@ const client = new ChatAdsClient({
 
 const response = await client.analyzeMessage({
   message: "What are the best noise-cancelling headphones?",
-  country: "US",
-  language: "en"
+  country: "US"
 });
 
 if (response.success && response.data.matched) {
@@ -62,7 +61,6 @@ Analyze a message for affiliate opportunities.
 const response = await client.analyzeMessage({
   message: "Looking for a good yoga mat",
   country: "US",
-  language: "en",
   message_analysis: "balanced",    // fast | balanced | thorough
   fill_priority: "coverage",       // speed | coverage
   min_intent: "low"                // any | low | medium | high

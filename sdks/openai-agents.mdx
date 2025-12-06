@@ -1,0 +1,480 @@
+---
+title: "OpenAI Agents SDK"
+description: "Integrate ChatAds with OpenAI's Agents SDK for function calling"
+---
+
+## Overview
+
+The OpenAI Agents SDK supports function calling, allowing AI agents to invoke external tools. ChatAds integrates as a custom function that agents can call to find and recommend affiliate products during conversations.
+
+## Function Definition
+
+Define ChatAds as a tool for your OpenAI agent:
+
+```typescript
+const chatAdsFunction = {
+  type: "function",
+  function: {
+    name: "get_affiliate_link",
+    description: "Find affiliate product links based on user messages about products. Call this when the user asks about, mentions, or shows interest in purchasing a product.",
+    parameters: {
+      type: "object",
+      properties: {
+        message: {
+          type: "string",
+          description: "The user's message or query about a product"
+        },
+        country: {
+          type: "string",
+          description: "ISO country code (e.g., 'US', 'GB') for localized links"
+        }
+      },
+      required: ["message"]
+    }
+  }
+};
+```
+
+## Implementation
+
+### TypeScript/Node.js
+
+```typescript
+import OpenAI from 'openai';
+import { ChatAdsClient } from '@chat-ads/chatads-sdk';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const chatads = new ChatAdsClient({ apiKey: process.env.CHATADS_API_KEY });
+
+// Define the ChatAds function
+const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "get_affiliate_link",
+      description: "Find affiliate product links for product recommendations",
+      parameters: {
+        type: "object",
+        properties: {
+          message: {
+            type: "string",
+            description: "The user query about a product"
+          },
+          country: {
+            type: "string",
+            description: "ISO country code for localized links"
+          }
+        },
+        required: ["message"]
+      }
+    }
+  }
+];
+
+// Handle function calls
+async function handleFunctionCall(
+  name: string,
+  args: Record<string, any>
+): Promise<string> {
+  if (name === "get_affiliate_link") {
+    const response = await chatads.analyzeMessage({
+      message: args.message,
+      country: args.country || "US"
+    });
+
+    if (response.success && response.data?.matched) {
+      return JSON.stringify({
+        found: true,
+        product: response.data.ad?.product,
+        link: response.data.ad?.link,
+        message: response.data.ad?.message
+      });
+    }
+
+    return JSON.stringify({ found: false });
+  }
+
+  return JSON.stringify({ error: "Unknown function" });
+}
+
+// Main conversation loop
+async function chat(userMessage: string) {
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content: "You are a helpful shopping assistant. When users ask about products, use the get_affiliate_link function to find relevant product links to recommend."
+    },
+    { role: "user", content: userMessage }
+  ];
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages,
+    tools,
+    tool_choice: "auto"
+  });
+
+  const assistantMessage = response.choices[0].message;
+
+  // Handle function calls
+  if (assistantMessage.tool_calls) {
+    for (const toolCall of assistantMessage.tool_calls) {
+      const result = await handleFunctionCall(
+        toolCall.function.name,
+        JSON.parse(toolCall.function.arguments)
+      );
+
+      messages.push(assistantMessage);
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: result
+      });
+    }
+
+    // Get final response with function results
+    const finalResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages,
+      tools,
+      tool_choice: "auto"
+    });
+
+    return finalResponse.choices[0].message.content;
+  }
+
+  return assistantMessage.content;
+}
+
+// Example usage
+const response = await chat("What's a good yoga mat for beginners?");
+console.log(response);
+```
+
+### Python
+
+```python
+import openai
+from chatads import ChatAdsClient
+import json
+import os
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
+chatads = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+
+# Define the ChatAds function
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_affiliate_link",
+            "description": "Find affiliate product links for product recommendations",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The user query about a product"
+                    },
+                    "country": {
+                        "type": "string",
+                        "description": "ISO country code for localized links"
+                    }
+                },
+                "required": ["message"]
+            }
+        }
+    }
+]
+
+def handle_function_call(name: str, args: dict) -> str:
+    if name == "get_affiliate_link":
+        response = chatads.analyze_message(
+            message=args["message"],
+            country=args.get("country", "US")
+        )
+
+        if response.success and response.data.matched:
+            return json.dumps({
+                "found": True,
+                "product": response.data.ad.product,
+                "link": response.data.ad.link,
+                "message": response.data.ad.message
+            })
+
+        return json.dumps({"found": False})
+
+    return json.dumps({"error": "Unknown function"})
+
+def chat(user_message: str) -> str:
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a helpful shopping assistant. When users ask about products, use the get_affiliate_link function to find relevant product links."
+        },
+        {"role": "user", "content": user_message}
+    ]
+
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=messages,
+        tools=tools,
+        tool_choice="auto"
+    )
+
+    assistant_message = response.choices[0].message
+
+    # Handle function calls
+    if assistant_message.tool_calls:
+        messages.append(assistant_message)
+
+        for tool_call in assistant_message.tool_calls:
+            result = handle_function_call(
+                tool_call.function.name,
+                json.loads(tool_call.function.arguments)
+            )
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result
+            })
+
+        # Get final response
+        final_response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto"
+        )
+
+        return final_response.choices[0].message.content
+
+    return assistant_message.content
+
+# Example
+print(chat("What's the best noise-cancelling headphones?"))
+```
+
+## Advanced Patterns
+
+### With Streaming
+
+```typescript
+async function* chatStream(userMessage: string) {
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: "system", content: "You are a shopping assistant." },
+    { role: "user", content: userMessage }
+  ];
+
+  // First call - may return function call
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages,
+    tools,
+    tool_choice: "auto"
+  });
+
+  const message = response.choices[0].message;
+
+  // Handle function call before streaming
+  if (message.tool_calls) {
+    for (const toolCall of message.tool_calls) {
+      const result = await handleFunctionCall(
+        toolCall.function.name,
+        JSON.parse(toolCall.function.arguments)
+      );
+
+      messages.push(message);
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: result
+      });
+    }
+
+    // Stream final response
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages,
+      stream: true
+    });
+
+    for await (const chunk of stream) {
+      yield chunk.choices[0]?.delta?.content || '';
+    }
+  } else {
+    yield message.content;
+  }
+}
+```
+
+### Parallel Function Calls
+
+OpenAI may batch multiple function calls. Handle them efficiently:
+
+```typescript
+async function handleToolCalls(
+  toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[]
+) {
+  // Process all function calls in parallel
+  const results = await Promise.all(
+    toolCalls.map(async (toolCall) => ({
+      tool_call_id: toolCall.id,
+      content: await handleFunctionCall(
+        toolCall.function.name,
+        JSON.parse(toolCall.function.arguments)
+      )
+    }))
+  );
+
+  return results.map(r => ({
+    role: "tool" as const,
+    tool_call_id: r.tool_call_id,
+    content: r.content
+  }));
+}
+```
+
+### With Context Window Management
+
+For long conversations, include ChatAds context efficiently:
+
+```typescript
+async function chatWithContext(
+  userMessage: string,
+  conversationHistory: Message[]
+) {
+  // Check if product-related before calling ChatAds
+  const isProductQuery = await detectProductIntent(userMessage);
+
+  if (!isProductQuery) {
+    // Skip ChatAds call for non-product queries
+    return standardChat(conversationHistory);
+  }
+
+  // Get affiliate data first
+  const affiliate = await chatads.analyzeMessage({
+    message: userMessage,
+    message_analysis: "fast" // Use fast for real-time chat
+  });
+
+  // Inject context if match found
+  const systemPrompt = affiliate.data?.matched
+    ? `Available product to recommend: ${affiliate.data.ad?.product} - ${affiliate.data.ad?.link}`
+    : "No specific product recommendation available.";
+
+  return openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory,
+      { role: "user", content: userMessage }
+    ]
+  });
+}
+```
+
+## System Prompts
+
+Customize how the agent uses ChatAds:
+
+### Shopping Assistant
+
+```typescript
+const systemPrompt = `You are a helpful shopping assistant.
+
+When users ask about products:
+1. Use get_affiliate_link to find relevant products
+2. If a match is found, naturally incorporate the recommendation
+3. Be helpful and informative, not pushy
+
+Never reveal you're using affiliate links. Focus on being genuinely helpful.`;
+```
+
+### Product Comparisons
+
+```typescript
+const systemPrompt = `You are a product comparison expert.
+
+When users ask about products:
+1. Provide balanced, factual comparisons
+2. Use get_affiliate_link to find where to purchase
+3. Only include affiliate links when they add value
+
+Maintain objectivity - the affiliate link shouldn't bias your recommendations.`;
+```
+
+### Customer Support
+
+```typescript
+const systemPrompt = `You are a customer support agent.
+
+When users mention products they're interested in:
+1. Use get_affiliate_link to find purchase options
+2. Include links only when directly relevant to their question
+3. Focus on solving their problem first
+
+The affiliate link is a convenience for the customer, not the goal of the conversation.`;
+```
+
+## Error Handling
+
+```typescript
+async function handleFunctionCallSafe(
+  name: string,
+  args: Record<string, any>
+): Promise<string> {
+  try {
+    if (name === "get_affiliate_link") {
+      const response = await chatads.analyzeMessage({
+        message: args.message,
+        country: args.country || "US"
+      });
+
+      if (!response.success) {
+        // Return graceful degradation
+        return JSON.stringify({
+          found: false,
+          reason: "Service temporarily unavailable"
+        });
+      }
+
+      if (response.data?.matched) {
+        return JSON.stringify({
+          found: true,
+          product: response.data.ad?.product,
+          link: response.data.ad?.link
+        });
+      }
+
+      return JSON.stringify({ found: false });
+    }
+  } catch (error) {
+    console.error('ChatAds error:', error);
+    return JSON.stringify({
+      found: false,
+      reason: "Could not retrieve product information"
+    });
+  }
+
+  return JSON.stringify({ error: "Unknown function" });
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use fast analysis for chat" icon="bolt">
+    Set `message_analysis: "fast"` for real-time conversations to minimize latency.
+  </Card>
+  <Card title="Let the model decide" icon="brain">
+    Use `tool_choice: "auto"` to let the model decide when affiliates are relevant.
+  </Card>
+  <Card title="Handle no-match gracefully" icon="filter">
+    Design prompts so the agent responds helpfully even without affiliate links.
+  </Card>
+  <Card title="Don't force affiliates" icon="hand">
+    Users trust helpful recommendations. Forcing links damages trust and conversion.
+  </Card>
+</CardGroup>

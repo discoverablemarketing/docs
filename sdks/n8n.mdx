@@ -1,0 +1,286 @@
+---
+title: "n8n Integration"
+description: "Use ChatAds in n8n workflow automation"
+---
+
+## Overview
+
+The ChatAds n8n node lets you add affiliate links to your automated workflows. Use it with chatbots, email automations, content generation, and any workflow that processes user messages.
+
+## Installation
+
+### Option 1: npm (Recommended)
+
+```bash
+npm install @getchatads/chatads-n8n
+```
+
+Then restart n8n to load the new node.
+
+### Option 2: Manual Installation
+
+1. Download the node package
+2. Copy to your n8n custom nodes directory (`~/.n8n/custom/`)
+3. Restart n8n
+
+## Configuration
+
+### Credentials Setup
+
+1. In n8n, go to **Credentials → New**
+2. Search for "ChatAds API"
+3. Enter your credentials:
+
+| Field | Value |
+|-------|-------|
+| API Key | Your key from [app.getchatads.com](https://app.getchatads.com/settings/api-keys) |
+| Base URL | `https://chatads--chatads-api-fastapiserver-serve.modal.run` |
+
+<Warning>
+  Store your API key securely. Never expose it in client-side code or commit it to version control.
+</Warning>
+
+## Node Parameters
+
+### Required
+
+<ParamField body="message" type="string" required>
+  The user message to analyze. Must be 1-5000 characters.
+</ParamField>
+
+### Optional
+
+<ParamField body="ip" type="string">
+  Client IP address for automatic geo-detection.
+</ParamField>
+
+<ParamField body="country" type="string">
+  ISO 3166-1 alpha-2 country code (e.g., "US", "GB", "DE"). Overrides IP-based detection.
+</ParamField>
+
+<ParamField body="message_analysis" type="string" default="balanced">
+  Keyword extraction method:
+  - `fast` — NLP only (~50ms)
+  - `balanced` — Hybrid NLP/LLM (~150ms)
+  - `thorough` — Deep LLM (~300ms)
+</ParamField>
+
+<ParamField body="fill_priority" type="string" default="coverage">
+  URL resolution strategy:
+  - `speed` — Skip fallback (faster)
+  - `coverage` — Full chain (more matches)
+</ParamField>
+
+<ParamField body="min_intent" type="string" default="low">
+  Purchase intent filter:
+  - `any` — No filtering
+  - `low` — Filter garbage
+  - `medium` — Balanced
+  - `high` — Premium only
+</ParamField>
+
+<ParamField body="skip_message_analysis" type="boolean" default="false">
+  When `true`, uses message directly as search query without NLP/LLM processing.
+</ParamField>
+
+### Advanced Settings
+
+<ParamField body="endpoint" type="string" default="/v1/chatads/messages">
+  API endpoint path (for custom deployments).
+</ParamField>
+
+<ParamField body="maxConcurrency" type="number" default="4">
+  Maximum parallel requests (1-50). Increase for high-throughput workflows.
+</ParamField>
+
+<ParamField body="timeoutSeconds" type="number" default="30">
+  HTTP request timeout in seconds (5-300).
+</ParamField>
+
+## Input Modes
+
+The node supports two input modes:
+
+### GUI Mode (Default)
+
+Configure each parameter individually using n8n's form interface. Good for simple workflows and visual configuration.
+
+### JSON Mode
+
+Pass a complete request payload as JSON. Enable by toggling "JSON Parameters" in the node settings:
+
+```json
+{
+  "message": "What's the best yoga mat for beginners?",
+  "country": "US",
+  "message_analysis": "balanced",
+  "fill_priority": "coverage",
+  "min_intent": "low"
+}
+```
+
+Use JSON mode for:
+- Dynamic payloads from expressions
+- Complex configurations
+- Copying requests from API Explorer
+
+## Response
+
+The node outputs the full ChatAds API response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "matched": true,
+    "filled": true,
+    "ad": {
+      "product": "Yoga Mat",
+      "link": "https://amazon.com/...",
+      "message": "Perfect for beginners",
+      "category": "fitness"
+    },
+    "keyword": "yoga mat",
+    "intent_score": 0.85,
+    "intent_level": "high"
+  },
+  "meta": {
+    "request_id": "abc-123",
+    "usage": {
+      "monthly_requests": 50,
+      "daily_requests": 10
+    }
+  }
+}
+```
+
+Access response fields using expressions:
+
+```
+{{ $json.data.ad.link }}
+{{ $json.data.ad.product }}
+{{ $json.data.matched }}
+```
+
+## Workflow Examples
+
+### AI Chatbot with Affiliates
+
+Add affiliate links to AI responses:
+
+<Steps>
+  <Step title="Trigger">
+    Webhook receives user message
+  </Step>
+  <Step title="ChatAds Node">
+    Analyze message for product keywords
+  </Step>
+  <Step title="IF Node">
+    Check `{{ $json.data.matched }}`
+  </Step>
+  <Step title="OpenAI Node">
+    Generate response with affiliate link in prompt:
+    ```
+    Include this product recommendation if relevant:
+    {{ $json.data.ad.product }} - {{ $json.data.ad.link }}
+    ```
+  </Step>
+  <Step title="Response">
+    Return AI response to user
+  </Step>
+</Steps>
+
+### Email Product Mentions
+
+Scan emails for product mentions:
+
+```
+Trigger: Gmail (new email)
+  → ChatAds (analyze email body)
+  → IF (matched = true)
+    → Slack (notify with affiliate opportunity)
+```
+
+### Content Generation Pipeline
+
+Enrich generated content with affiliate links:
+
+```
+Trigger: Schedule
+  → HTTP Request (fetch content topics)
+  → ChatAds (find affiliate for each topic)
+  → Merge (combine content + affiliate)
+  → WordPress (publish with affiliate links)
+```
+
+## Error Handling
+
+Enable "Continue on Fail" to handle errors gracefully:
+
+1. Click the ChatAds node
+2. Go to **Settings**
+3. Enable **Continue on Fail**
+
+Failed items will pass through with error data:
+
+```json
+{
+  "error": {
+    "message": "Daily quota exceeded",
+    "httpCode": 429
+  }
+}
+```
+
+Use an IF node to route errors:
+
+```
+{{ $json.error ? 'Error' : 'Success' }}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use expressions for dynamic messages" icon="code">
+    ```
+    {{ $json.userMessage }}
+    ```
+    Pull messages from previous nodes instead of hardcoding.
+  </Card>
+  <Card title="Handle no-match cases" icon="filter">
+    Always check `data.matched` before using affiliate data. Design workflows for both matched and unmatched scenarios.
+  </Card>
+  <Card title="Set appropriate concurrency" icon="gauge">
+    Increase `maxConcurrency` for batch processing. Keep it low (4-8) for real-time chatbots.
+  </Card>
+  <Card title="Monitor usage" icon="chart-line">
+    Check `meta.usage` in responses to track quota consumption.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Node Not Appearing
+
+1. Ensure the package is installed: `npm list @getchatads/chatads-n8n`
+2. Restart n8n completely (not just refresh)
+3. Check n8n logs for load errors
+
+### Authentication Errors
+
+- Verify API key starts with `cak_`
+- Check credentials are saved (not just entered)
+- Test key with curl first
+
+### Timeout Errors
+
+Increase `timeoutSeconds` in Advanced Settings for:
+- Complex queries with `thorough` analysis
+- Network latency issues
+- High-traffic periods
+
+### Rate Limit Errors
+
+- Lower `maxConcurrency` to spread requests
+- Add a Wait node between batches
+- Upgrade plan for higher limits

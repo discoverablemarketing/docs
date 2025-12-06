@@ -12,12 +12,12 @@ Analyzes a user message to extract product keywords and return relevant affiliat
   The user message to analyze. Required, 1-5000 characters.
 </ParamField>
 
-<ParamField body="country" type="string">
-  ISO 3166-1 alpha-2 country code for geo-targeting (e.g., "US", "GB", "DE").
+<ParamField body="ip" type="string">
+  Client IP address for geo-detection (max 64 characters).
 </ParamField>
 
-<ParamField body="language" type="string">
-  ISO 639-1 language code (e.g., "en", "es", "de").
+<ParamField body="country" type="string">
+  ISO 3166-1 alpha-2 country code for geo-targeting (e.g., "US", "GB", "DE").
 </ParamField>
 
 <ParamField body="message_analysis" type="string" default="balanced">
@@ -97,7 +97,6 @@ curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chat
   -d '{
     "message": "What are the best noise-cancelling headphones?",
     "country": "US",
-    "language": "en",
     "message_analysis": "balanced"
   }'
 ```

@@ -33,15 +33,25 @@
             "pages": [
               "guides/authentication",
               "guides/rate-limits",
-              "guides/error-handling"
+              "guides/error-handling",
+              "guides/troubleshooting"
             ]
           },
           {
-            "group": "SDKs",
+            "group": "SDKs & Integrations",
             "pages": [
               "sdks/typescript",
               "sdks/python",
-              "sdks/mcp"
+              "sdks/mcp",
+              "sdks/n8n",
+              "sdks/zapier",
+              "sdks/openai-agents"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "faq"
             ]
           }
         ]

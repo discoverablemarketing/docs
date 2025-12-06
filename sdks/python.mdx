@@ -18,8 +18,7 @@ client = ChatAdsClient(api_key="cak_your_api_key")
 
 response = client.analyze_message(
     message="What are the best noise-cancelling headphones?",
-    country="US",
-    language="en"
+    country="US"
 )
 
 if response.success and response.data.matched:
@@ -49,7 +48,6 @@ Analyze a message for affiliate opportunities.
 response = client.analyze_message(
     message="Looking for a good yoga mat",
     country="US",
-    language="en",
     message_analysis="balanced",    # fast | balanced | thorough
     fill_priority="coverage",       # speed | coverage
     min_intent="low"                # any | low | medium | high

@@ -13,10 +13,10 @@ https://chatads--chatads-api-fastapiserver-serve.modal.run
 
 ## Authentication
 
-All API endpoints require authentication via the `X-API-Key` header.
+All API endpoints require authentication via the `x-api-key` header.
 
 ```bash
-curl -H "X-API-Key: YOUR_API_KEY" \
+curl -H "x-api-key: YOUR_API_KEY" \
   https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages
 ```
 
@@ -26,7 +26,7 @@ Get your API key from [app.getchatads.com/settings/api-keys](https://app.getchat
 
 All requests should:
 - Use `Content-Type: application/json`
-- Include the `X-API-Key` header
+- Include the `x-api-key` header
 - Send data in JSON format
 
 ## Response Format

@@ -40,6 +40,26 @@ ChatAds currently supports:
 When Amazon PA-API doesn't find a match, ChatAds falls back to Google Shopping results (unless you set `fill_priority: "speed"`).
 </Accordion>
 
+<Accordion title="Why does ChatAds return only one winning ad?">
+To avoid overwhelming users with too many affiliate links, ChatAds returns only the single best-matching ad per request. This keeps the user experience clean and maximizes conversion rates.
+
+If you need multiple ads per request, contact support@getchatads.com to discuss enterprise options.
+</Accordion>
+
+<Accordion title="How does ChatAds determine the winning ad?">
+ChatAds uses a multi-factor ranking algorithm:
+
+1. **Keyword Extraction** - NLP/LLM identifies product mentions in the message
+2. **Product Matching** - Queries multiple affiliate partners (Amazon PA-API, Google Shopping)
+3. **Ranking** - Scores candidates based on:
+   - Relevance to the extracted keywords
+   - Commission rates and payout potential
+   - Historical conversion performance
+   - Product availability and pricing
+
+The highest-scoring result is returned as the winning ad.
+</Accordion>
+
 </AccordionGroup>
 
 ## API & Integration
@@ -101,6 +121,24 @@ Use `speed` when latency matters more than match rate. Use `coverage` when you w
 
 <Accordion title="Can I use ChatAds with multiple AI assistants?">
 Yes! Your API key works across any integration. Rate limits are per-team, shared across all API keys and integrations. Create multiple API keys in the dashboard if you need separate tracking for different projects.
+</Accordion>
+
+<Accordion title="What happens if I send non-US or non-English traffic?">
+The API returns `success: true` but `matched: false` with a reason explaining why no ad was matched:
+
+```json
+{
+  "success": true,
+  "matched": false,
+  "reason": "non-US IP detected"
+}
+```
+
+Common reasons include:
+- `"non-US IP detected"` - Request originated from outside the United States
+- `"non-English message"` - Message language detected as non-English
+
+While these requests succeed (no error), they won't match ads and still count toward your rate limit. **Recommendation:** Filter non-qualifying traffic client-side before calling the API to maximize your quota efficiency.
 </Accordion>
 
 </AccordionGroup>
@@ -181,17 +219,17 @@ New limits take effect immediately.
 <AccordionGroup>
 
 <Accordion title="I'm getting UNAUTHORIZED (401) errors">
-This means no API key was provided. Check that you're including the `X-API-Key` header:
+This means no API key was provided. Check that you're including the `x-api-key` header:
 
 ```bash
 curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
-  -H 'X-API-Key: cak_your_api_key' \
+  -H 'x-api-key: cak_your_api_key' \
   -H 'Content-Type: application/json' \
   -d '{"message": "test"}'
 ```
 
 Common issues:
-- Header name is case-sensitive: use `X-API-Key`
+- Header name should be `x-api-key`
 - Don't include "Bearer" prefix—just the key itself
 </Accordion>
 
@@ -212,6 +250,10 @@ Several reasons can cause no match:
 2. **Intent too low** - The query's intent score is below your `min_intent` threshold
 3. **No affiliate available** - The product exists but has no affiliate link
 4. **Blocked keyword** - Your team has a keyword rule blocking this content
+5. **Message too short** - After removing PII and blocked keywords, fewer than 2 words remain
+6. **Non-US/non-English** - Traffic from outside the US or in a non-English language
+
+**Technical note:** The API requires 2+ words before processing. After sanitization (removing PII, URLs, blocked keywords), messages may become too short for product extraction even if they started longer.
 
 Check the `reason` field in the response for specifics.
 </Accordion>
@@ -287,6 +329,8 @@ ChatAds uses this for:
 - Geo-restriction enforcement (if configured)
 
 You can also pass `ip` for automatic geo-detection.
+
+**Recommendation:** ChatAds currently only matches US, English traffic. Passing `ip` or `country` lets you filter non-qualifying traffic before making API calls, saving your request quota and avoiding partner API throttling. If you already know the user's country, pass `country` directly; otherwise pass `ip` for auto-detection.
 </Accordion>
 
 <Accordion title="Can I block certain keywords or products?">
@@ -300,7 +344,9 @@ Blocked requests return `CONTENT_BLOCKED` (422) and don't count against your quo
 </Accordion>
 
 <Accordion title="What's the maximum message length?">
-Messages can be 1-5000 characters. Longer messages return `MESSAGE_TOO_LONG` (400).
+Messages can be 1-5,000 characters. Longer messages return `MESSAGE_TOO_LONG` (400).
+
+**Note:** Messages longer than 100 words are automatically truncated before NLP processing. This happens internally and won't cause an error—you can send longer messages, but only the first ~100 words are analyzed for product keywords.
 
 For best results, send the relevant portion of the conversation—typically the user's last message or the product-related context.
 </Accordion>

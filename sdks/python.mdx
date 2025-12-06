@@ -12,30 +12,36 @@ pip install chatads-sdk
 ## Quick Start
 
 ```python
-from chatads import ChatAdsClient
+from chatads_sdk import ChatAdsClient
 
-client = ChatAdsClient(api_key="cak_your_api_key")
+# Use context manager for automatic cleanup
+with ChatAdsClient(api_key="cak_your_api_key") as client:
+    response = client.analyze_message(
+        message="What are the best noise-cancelling headphones?",
+        country="US"
+    )
 
-response = client.analyze_message(
-    message="What are the best noise-cancelling headphones?",
-    country="US"
-)
-
-if response.success and response.data.matched:
-    print(f"Product: {response.data.ad.product}")
-    print(f"Link: {response.data.ad.link}")
+    if response.success and response.data.matched:
+        print(f"Product: {response.data.ad.product}")
+        print(f"Link: {response.data.ad.link}")
 ```
 
 ## Configuration
 
 ```python
-from chatads import ChatAdsClient
+from chatads_sdk import ChatAdsClient
 
-client = ChatAdsClient(
-    api_key="cak_your_api_key",     # Required
-    base_url="https://...",          # Optional: custom API URL
-    timeout=30,                      # Optional: request timeout in seconds
-)
+# Basic usage with context manager (recommended)
+with ChatAdsClient(
+    api_key="cak_your_api_key",          # Required
+    base_url="https://...",               # Optional: custom API URL
+    raise_on_failure=True,                # Optional: raise exceptions on API errors
+    max_retries=2,                        # Optional: retry failed requests
+    retry_backoff_factor=0.75,            # Optional: backoff multiplier between retries
+    debug=False,                          # Optional: enable debug logging
+) as client:
+    # Use client here
+    pass
 ```
 
 ## Methods
@@ -72,28 +78,36 @@ response = client.analyze_message(
 
 ## Error Handling
 
+The SDK provides two exception types for different error scenarios:
+
+- `ChatAdsAPIError` - Raised for API-level errors (HTTP 4xx/5xx responses)
+- `ChatAdsSDKError` - Raised for SDK-level issues (validation, configuration, transport)
+
 ```python
-from chatads import ChatAdsClient, ChatAdsError
+from chatads_sdk import ChatAdsClient, ChatAdsAPIError, ChatAdsSDKError
 
-client = ChatAdsClient(api_key="cak_your_api_key")
+with ChatAdsClient(api_key="cak_your_api_key", raise_on_failure=True) as client:
+    try:
+        response = client.analyze_message(message="...")
 
-try:
-    response = client.analyze_message(message="...")
+        if not response.success:
+            if response.error.code == "RATE_LIMIT_EXCEEDED":
+                # Wait and retry
+                pass
+            elif response.error.code == "UNAUTHORIZED":
+                # Check API key
+                pass
+            else:
+                print(f"Error: {response.error.message}")
 
-    if not response.success:
-        if response.error.code == "RATE_LIMIT_EXCEEDED":
-            # Wait and retry
-            pass
-        elif response.error.code == "UNAUTHORIZED":
-            # Check API key
-            pass
-        else:
-            print(f"Error: {response.error.message}")
-
-except ChatAdsError as e:
-    print(f"API error: {e}")
-except Exception as e:
-    print(f"Network error: {e}")
+    except ChatAdsAPIError as e:
+        # API returned an error response (4xx/5xx)
+        print(f"API error: {e.status_code} - {e.payload}")
+    except ChatAdsSDKError as e:
+        # SDK-level error (validation, config, transport)
+        print(f"SDK error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 ```
 
 ## Framework Examples
@@ -101,39 +115,57 @@ except Exception as e:
 ### FastAPI
 
 ```python
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from chatads import ChatAdsClient
+from chatads_sdk import AsyncChatAdsClient
 import os
 
-app = FastAPI()
-client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+# Use lifespan for proper client lifecycle management
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.chatads = AsyncChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+    yield
+    await app.state.chatads.close()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/analyze")
 async def analyze(message: str):
-    response = client.analyze_message(
+    response = await app.state.chatads.analyze_message(
         message=message,
         country="US"
     )
-    return response.dict()
+    return response.raw
 ```
 
 ### Flask
 
 ```python
-from flask import Flask, request, jsonify
-from chatads import ChatAdsClient
+from flask import Flask, request, jsonify, g
+from chatads_sdk import ChatAdsClient
 import os
 
 app = Flask(__name__)
-client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+
+def get_chatads_client():
+    if 'chatads' not in g:
+        g.chatads = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+    return g.chatads
+
+@app.teardown_appcontext
+def close_chatads(error):
+    client = g.pop('chatads', None)
+    if client is not None:
+        client.close()
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.get_json()
+    client = get_chatads_client()
     response = client.analyze_message(
         message=data["message"]
     )
-    return jsonify(response.dict())
+    return jsonify(response.raw)
 ```
 
 ### Django
@@ -142,19 +174,19 @@ def analyze():
 # views.py
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from chatads import ChatAdsClient
+from chatads_sdk import ChatAdsClient
 import json
 import os
-
-client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
 
 @require_POST
 def analyze(request):
     data = json.loads(request.body)
-    response = client.analyze_message(
-        message=data["message"]
-    )
-    return JsonResponse(response.dict())
+    # Use context manager for automatic cleanup
+    with ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"]) as client:
+        response = client.analyze_message(
+            message=data["message"]
+        )
+        return JsonResponse(response.raw)
 ```
 
 ## Environment Variables
@@ -163,11 +195,100 @@ We recommend storing your API key in environment variables:
 
 ```python
 import os
-from chatads import ChatAdsClient
+from chatads_sdk import ChatAdsClient
 
-client = ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"])
+with ChatAdsClient(api_key=os.environ["CHATADS_API_KEY"]) as client:
+    response = client.analyze_message(message="...")
 ```
 
 ```bash
 export CHATADS_API_KEY=cak_your_api_key
+```
+
+## Using FunctionItemPayload
+
+For more control over request parameters, use `FunctionItemPayload`:
+
+```python
+from chatads_sdk import ChatAdsClient, FunctionItemPayload
+
+with ChatAdsClient(api_key="cak_your_api_key") as client:
+    payload = FunctionItemPayload(
+        message="Looking for a CRM to close more deals",
+        ip="1.2.3.4",
+        country="US",
+        language="en",
+        message_analysis="balanced",  # fast | balanced | thorough
+        fill_priority="coverage",     # speed | coverage
+        min_intent="low",             # any | low | medium | high
+    )
+
+    result = client.analyze(payload)
+
+    if result.success:
+        print(result.data.ad)
+    else:
+        print(result.error.code, result.error.message)
+```
+
+## Async Client
+
+For asynchronous workflows, use `AsyncChatAdsClient`:
+
+```python
+import asyncio
+from chatads_sdk import AsyncChatAdsClient, FunctionItemPayload
+
+async def main():
+    async with AsyncChatAdsClient(
+        api_key="cak_your_api_key",
+        max_retries=3,
+        debug=True,
+    ) as client:
+        # Using analyze_message shorthand
+        result = await client.analyze_message(
+            message="Need data warehousing ideas",
+            country="US",
+            ip="1.2.3.4",
+        )
+
+        print(result.raw)
+
+        # Or using FunctionItemPayload for full control
+        payload = FunctionItemPayload(
+            message="Best standing desk for home office",
+            country="US",
+        )
+        result = await client.analyze(payload)
+
+        if result.success and result.data.matched:
+            print(f"Found: {result.data.ad.product}")
+
+asyncio.run(main())
+```
+
+### Concurrent Requests
+
+Process multiple messages concurrently:
+
+```python
+import asyncio
+from chatads_sdk import AsyncChatAdsClient
+
+async def analyze_batch(messages: list[str]):
+    async with AsyncChatAdsClient(api_key="cak_your_api_key") as client:
+        tasks = [
+            client.analyze_message(message=msg, country="US")
+            for msg in messages
+        ]
+        results = await asyncio.gather(*tasks)
+        return results
+
+# Usage
+messages = [
+    "Best noise-cancelling headphones",
+    "Top rated standing desks",
+    "Ergonomic office chairs",
+]
+results = asyncio.run(analyze_batch(messages))
 ```

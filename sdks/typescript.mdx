@@ -27,38 +27,47 @@ pnpm add @chat-ads/chatads-sdk
 import { ChatAdsClient } from '@chat-ads/chatads-sdk';
 
 const client = new ChatAdsClient({
-  apiKey: process.env.CHATADS_API_KEY
+  apiKey: process.env.CHATADS_API_KEY!,
+  baseUrl: 'https://chatads--chatads-api-fastapiserver-serve.modal.run'
 });
 
-const response = await client.analyzeMessage({
-  message: "What are the best noise-cancelling headphones?",
-  country: "US"
-});
+// Using analyzeMessage (string + options)
+const response = await client.analyzeMessage(
+  "What are the best noise-cancelling headphones?",
+  { country: "US" }
+);
 
-if (response.success && response.data.matched) {
-  console.log(`Product: ${response.data.ad.product}`);
-  console.log(`Link: ${response.data.ad.link}`);
+if (response.success && response.data?.matched) {
+  console.log(`Product: ${response.data.ad?.product}`);
+  console.log(`Link: ${response.data.ad?.link}`);
 }
 ```
 
 ## Configuration Options
 
 ```typescript
+import { ChatAdsClient } from '@chat-ads/chatads-sdk';
+
 const client = new ChatAdsClient({
-  apiKey: 'cak_your_api_key',       // Required
-  baseUrl: 'https://...',            // Optional: custom API URL
-  timeout: 30000,                    // Optional: request timeout in ms
+  apiKey: 'cak_your_api_key',                    // Required
+  baseUrl: 'https://chatads--chatads-api-...',   // Required: API base URL
+  timeoutMs: 10000,                              // Optional: request timeout (default: 10000)
+  maxRetries: 2,                                 // Optional: retry attempts (default: 0)
+  retryBackoffFactorMs: 500,                     // Optional: backoff between retries
+  raiseOnFailure: true,                          // Optional: throw on API errors
+  fetchImplementation: customFetch,              // Optional: custom fetch for Node 16
+  logger: console,                               // Optional: debug logging
 });
 ```
 
 ## Methods
 
-### analyzeMessage
+### analyze
 
-Analyze a message for affiliate opportunities.
+Analyze a message using a payload object.
 
 ```typescript
-const response = await client.analyzeMessage({
+const response = await client.analyze({
   message: "Looking for a good yoga mat",
   country: "US",
   message_analysis: "balanced",    // fast | balanced | thorough
@@ -67,47 +76,105 @@ const response = await client.analyzeMessage({
 });
 ```
 
-## Response Types
+### analyzeMessage
+
+Convenience method that takes a message string directly.
 
 ```typescript
-interface ChatAdsResponse {
+// Simple usage
+const response = await client.analyzeMessage("Looking for a good yoga mat");
+
+// With options
+const response = await client.analyzeMessage(
+  "Looking for a good yoga mat",
+  {
+    country: "US",
+    message_analysis: "balanced",
+    fill_priority: "coverage",
+    min_intent: "low"
+  }
+);
+```
+
+## Response Types
+
+The SDK exports the following types from `@chat-ads/chatads-sdk`:
+
+```typescript
+import type {
+  ChatAdsResponseEnvelope,
+  ChatAdsData,
+  ChatAdsAd,
+  ChatAdsError,
+  ChatAdsMeta,
+  UsageInfo
+} from '@chat-ads/chatads-sdk';
+
+// Response envelope returned by analyze() and analyzeMessage()
+interface ChatAdsResponseEnvelope {
   success: boolean;
-  data: {
-    matched: boolean;
-    filled: boolean;
-    ad: {
-      product: string;
-      link: string;
-      message: string;
-      category: string;
-    } | null;
-    keyword: string | null;
-    intent_score: number | null;
-  } | null;
-  error: {
-    code: string;
-    message: string;
-    details: Record<string, any>;
-  } | null;
-  meta: {
-    request_id: string;
-    country: string;
-    language: string;
-    usage: {
-      monthly_requests: number;
-      daily_requests: number;
-      daily_limit: number;
-    };
-  };
+  data?: ChatAdsData | null;
+  error?: ChatAdsError | null;
+  meta: ChatAdsMeta;
+}
+
+interface ChatAdsData {
+  matched: boolean;
+  filled?: boolean;
+  ad?: ChatAdsAd | null;
+  keyword?: string | null;
+  reason?: string | null;
+  intent_score?: number | null;
+  intent_level?: string | null;
+}
+
+interface ChatAdsAd {
+  product: string;
+  link: string;
+  message: string;
+  category: string;
+}
+
+interface ChatAdsError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+interface ChatAdsMeta {
+  request_id: string;
+  user_id?: string | null;
+  country?: string | null;
+  language?: string | null;
+  processing_time_ms?: number | null;
+  usage?: UsageInfo | null;
+}
+
+interface UsageInfo {
+  monthly_requests: number;
+  is_free_tier: boolean;
+  free_tier_limit?: number | null;
+  free_tier_remaining?: number | null;
+  daily_requests?: number | null;
+  daily_limit?: number | null;
 }
 ```
 
 ## Error Handling
 
-```typescript
-try {
-  const response = await client.analyzeMessage({ message: "..." });
+The SDK exports two error classes for typed error handling:
 
+```typescript
+import {
+  ChatAdsClient,
+  ChatAdsAPIError,
+  ChatAdsSDKError
+} from '@chat-ads/chatads-sdk';
+
+try {
+  const response = await client.analyzeMessage("Looking for headphones");
+
+  // Check response-level errors (when raiseOnFailure is false)
   if (!response.success) {
     switch (response.error?.code) {
       case 'RATE_LIMIT_EXCEEDED':
@@ -121,7 +188,17 @@ try {
     }
   }
 } catch (error) {
-  console.error('Network error:', error);
+  // ChatAdsAPIError: HTTP errors (4xx, 5xx) or logical failures (when raiseOnFailure is true)
+  if (error instanceof ChatAdsAPIError) {
+    console.error('API Error:', error.statusCode, error.response?.error);
+  }
+  // ChatAdsSDKError: Configuration, validation, or transport errors
+  else if (error instanceof ChatAdsSDKError) {
+    console.error('SDK Error:', error.message);
+  }
+  else {
+    console.error('Unexpected error:', error);
+  }
 }
 ```
 
@@ -135,16 +212,14 @@ import { ChatAdsClient } from '@chat-ads/chatads-sdk';
 import { NextResponse } from 'next/server';
 
 const client = new ChatAdsClient({
-  apiKey: process.env.CHATADS_API_KEY!
+  apiKey: process.env.CHATADS_API_KEY!,
+  baseUrl: process.env.CHATADS_BASE_URL!
 });
 
 export async function POST(request: Request) {
   const { message } = await request.json();
 
-  const response = await client.analyzeMessage({
-    message,
-    country: "US"
-  });
+  const response = await client.analyzeMessage(message, { country: "US" });
 
   return NextResponse.json(response);
 }
@@ -158,13 +233,12 @@ import { ChatAdsClient } from '@chat-ads/chatads-sdk';
 
 const app = express();
 const client = new ChatAdsClient({
-  apiKey: process.env.CHATADS_API_KEY!
+  apiKey: process.env.CHATADS_API_KEY!,
+  baseUrl: process.env.CHATADS_BASE_URL!
 });
 
 app.post('/analyze', async (req, res) => {
-  const response = await client.analyzeMessage({
-    message: req.body.message
-  });
+  const response = await client.analyzeMessage(req.body.message);
   res.json(response);
 });
 ```

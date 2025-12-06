@@ -12,7 +12,7 @@
     "baseUrl": "https://chatads--chatads-api-fastapiserver-serve.modal.run",
     "auth": {
       "method": "key",
-      "name": "X-API-Key"
+      "name": "x-api-key"
     }
   },
   "openapi": "/api-reference/openapi.json",

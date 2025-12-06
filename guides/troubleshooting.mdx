@@ -16,15 +16,15 @@ Every ChatAds error includes a code, message, and optional details. Here's how t
 
 **Solution:**
 ```bash
-# Add the X-API-Key header
+# Add the x-api-key header
 curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
-  -H 'X-API-Key: cak_your_api_key' \
+  -H 'x-api-key: cak_your_api_key' \
   -H 'Content-Type: application/json' \
   -d '{"message": "test"}'
 ```
 
 **Checklist:**
-- [ ] Header name is exactly `X-API-Key` (case-sensitive)
+- [ ] Header name is `x-api-key`
 - [ ] No "Bearer" prefix—just the key value
 - [ ] Key is not empty or whitespace
 </Accordion>
@@ -401,7 +401,7 @@ When troubleshooting, work through this checklist:
     ```bash
     # Test with curl
     curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
-      -H 'X-API-Key: YOUR_KEY' \
+      -H 'x-api-key: YOUR_KEY' \
       -H 'Content-Type: application/json' \
       -d '{"message": "best yoga mat"}'
     ```

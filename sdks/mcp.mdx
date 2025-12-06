@@ -5,26 +5,32 @@ description: "Use ChatAds with AI assistants via Model Context Protocol"
 
 ## Overview
 
-ChatAds supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for seamless integration with AI assistants like Claude, GPT, and others.
+ChatAds supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for seamless integration with AI assistants like Claude Desktop and other MCP-compatible clients.
 
-## MCP Wrapper SDK
+## Installation
 
-Install the ChatAds MCP wrapper:
+Install the ChatAds MCP wrapper from PyPI:
 
 ```bash
-npm install chatads-mcp-wrapper
+pip install chatads-mcp-wrapper
 ```
 
-## Configuration
+<Note>
+The MCP wrapper is a **Python package**. Requires Python 3.8+.
+</Note>
 
-Add ChatAds to your MCP server configuration:
+## Claude Desktop Configuration
+
+Add ChatAds to your Claude Desktop MCP configuration:
+
+### Option 1: Using python -m (Recommended)
 
 ```json
 {
   "mcpServers": {
     "chatads": {
-      "command": "npx",
-      "args": ["chatads-mcp-wrapper"],
+      "command": "python",
+      "args": ["-m", "chatads_mcp_wrapper"],
       "env": {
         "CHATADS_API_KEY": "cak_your_api_key"
       }
@@ -32,78 +38,55 @@ Add ChatAds to your MCP server configuration:
   }
 }
 ```
+
+### Option 2: Using the chatads-mcp command
+
+First, find where the command was installed:
+
+```bash
+which chatads-mcp
+```
+
+Then use the full path in your config:
+
+```json
+{
+  "mcpServers": {
+    "chatads": {
+      "command": "/path/from/which/chatads-mcp",
+      "args": [],
+      "env": {
+        "CHATADS_API_KEY": "cak_your_api_key"
+      }
+    }
+  }
+}
+```
+
+<Tip>
+Common installation paths:
+- Standard pip: `~/.local/bin/chatads-mcp`
+- pyenv: `~/.pyenv/shims/chatads-mcp`
+- System Python: `/usr/local/bin/chatads-mcp`
+</Tip>
 
 ## Available Tools
 
-### chatads_analyze
+### chatads_message_send
 
-Analyze a message for affiliate product recommendations.
+The main MCP tool for fetching affiliate product recommendations.
 
 **Parameters:**
-- `message` (required): The user message to analyze
-- `country` (optional): ISO country code
-- `language` (optional): ISO language code
+- `message` (required): The user message to analyze (2-100 words)
+- `country` (optional): ISO 3166-1 alpha-2 country code (e.g., "US", "GB")
+- `language` (optional): ISO 639-1 language code (e.g., "en", "es")
+- `ip` (optional): User IP address for geo-targeting
 
-**Example Usage in AI Assistant:**
+**Example Usage in Claude Desktop:**
 
 ```
 User: Can you find me affiliate links for yoga mats?
-Assistant: [Uses chatads_analyze tool]
-```
-
-## Integration Examples
-
-### Claude Desktop
-
-Add to your Claude Desktop config (`~/.config/claude/mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "chatads": {
-      "command": "npx",
-      "args": ["chatads-mcp-wrapper"],
-      "env": {
-        "CHATADS_API_KEY": "cak_your_api_key"
-      }
-    }
-  }
-}
-```
-
-### Custom MCP Server
-
-```typescript
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { ChatAdsClient } from "@chat-ads/chatads-sdk";
-
-const client = new ChatAdsClient({
-  apiKey: process.env.CHATADS_API_KEY
-});
-
-const server = new Server({
-  name: "chatads",
-  version: "1.0.0"
-});
-
-server.setRequestHandler("tools/call", async (request) => {
-  if (request.params.name === "chatads_analyze") {
-    const { message, country, language } = request.params.arguments;
-
-    const response = await client.analyzeMessage({
-      message,
-      country,
-      language
-    });
-
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(response, null, 2)
-      }]
-    };
-  }
-});
+Assistant: [Uses chatads_message_send tool]
 ```
 
 ## Response Format
@@ -124,6 +107,13 @@ The MCP tool returns the standard ChatAds response:
   }
 }
 ```
+
+## Testing Your Setup
+
+1. Restart Claude Desktop after updating the config
+2. Ask Claude: "What tools do you have access to?"
+3. You should see `chatads_message_send` in the list
+4. Test it: "Use chatads_message_send to find recommendations for 'best standing desk'"
 
 ## Best Practices
 

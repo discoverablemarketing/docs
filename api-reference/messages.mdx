@@ -93,11 +93,9 @@ Analyzes a user message to extract product keywords and return relevant affiliat
 ```bash cURL
 curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
   -H 'Content-Type: application/json' \
-  -H 'X-API-Key: YOUR_API_KEY' \
+  -H 'x-api-key: YOUR_API_KEY' \
   -d '{
-    "message": "What are the best noise-cancelling headphones?",
-    "country": "US",
-    "message_analysis": "balanced"
+    "message": "What are the best noise-cancelling headphones?"
   }'
 ```
 </RequestExample>

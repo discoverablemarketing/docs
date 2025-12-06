@@ -26,10 +26,9 @@ description: "Make your first ChatAds API call in under 5 minutes"
 ```bash cURL
 curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
   -H 'Content-Type: application/json' \
-  -H 'X-API-Key: YOUR_API_KEY' \
+  -H 'x-api-key: YOUR_API_KEY' \
   -d '{
-    "message": "What are the best noise-cancelling headphones?",
-    "country": "US"
+    "message": "What are the best noise-cancelling headphones?"
   }'
 ```
 
@@ -39,24 +38,133 @@ import { ChatAdsClient } from '@chat-ads/chatads-sdk';
 const client = new ChatAdsClient({ apiKey: 'YOUR_API_KEY' });
 
 const response = await client.analyzeMessage({
-  message: "What are the best noise-cancelling headphones?",
-  country: "US"
+  message: "What are the best noise-cancelling headphones?"
 });
 
 console.log(response.data);
 ```
 
 ```python Python
-from chatads import ChatAdsClient
+from chatads_sdk import ChatAdsClient
 
-client = ChatAdsClient(api_key="YOUR_API_KEY")
+with ChatAdsClient(api_key="YOUR_API_KEY") as client:
+    response = client.analyze_message(
+        message="What are the best noise-cancelling headphones?"
+    )
+    print(response.data)
+```
 
-response = client.analyze_message(
-    message="What are the best noise-cancelling headphones?",
-    country="US"
+```javascript Node.js
+const url = "https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages";
+
+const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "YOUR_API_KEY"
+  },
+  body: JSON.stringify({
+    message: "What are the best noise-cancelling headphones?"
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+
+url = URI("https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages")
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = true
+
+request = Net::HTTP::Post.new(url.path, {
+  "Content-Type" => "application/json",
+  "x-api-key" => "YOUR_API_KEY"
+})
+
+request.body = { message: "What are the best noise-cancelling headphones?" }.to_json
+
+response = http.request(request)
+puts JSON.parse(response.body)
+```
+
+```php PHP
+<?php
+$url = "https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages";
+
+$payload = ["message" => "What are the best noise-cancelling headphones?"];
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Content-Type: application/json",
+    "x-api-key: YOUR_API_KEY"
+]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+print_r(json_decode($response, true));
+?>
+```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
 )
 
-print(response.data)
+func main() {
+    url := "https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages"
+    payload := []byte(`{"message": "What are the best noise-cancelling headphones?"}`)
+
+    req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-api-key", "YOUR_API_KEY")
+
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+
+    body, _ := io.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+
+```java Java
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class ChatAdsExample {
+    public static void main(String[] args) throws Exception {
+        String url = "https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages";
+        String payload = "{\"message\": \"What are the best noise-cancelling headphones?\"}";
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .header("x-api-key", "YOUR_API_KEY")
+            .POST(HttpRequest.BodyPublishers.ofString(payload))
+            .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}
 ```
 
 </CodeGroup>

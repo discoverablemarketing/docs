@@ -232,6 +232,8 @@ import express from 'express';
 import { ChatAdsClient } from '@chat-ads/chatads-sdk';
 
 const app = express();
+app.use(express.json());
+
 const client = new ChatAdsClient({
   apiKey: process.env.CHATADS_API_KEY!,
   baseUrl: process.env.CHATADS_BASE_URL!

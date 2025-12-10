@@ -29,6 +29,27 @@ All requests should:
 - Include the `x-api-key` header
 - Send data in JSON format
 
+## Response Times
+
+Our API is designed for low-latency inline processing, with response times optimized for different use cases.
+
+<CardGroup cols={2}>
+  <Card title="Standard" icon="gauge">
+    **350ms - 600ms**
+
+    Full message analysis with keyword extraction, intent scoring, and affiliate link resolution.
+  </Card>
+  <Card title="Message Analysis = Fast" icon="bolt">
+    **250ms - 400ms**
+
+    Faster, with potential accuracy tradeoff. Set `message_analysis: "fast"` for reduced latency.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Use `skip_message_analysis: true` for the fastest responses when you already have a product keyword. This bypasses extraction entirely and goes straight to link resolution.
+</Tip>
+
 ## Response Format
 
 All responses follow this structure:

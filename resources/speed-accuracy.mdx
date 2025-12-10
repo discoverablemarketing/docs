@@ -1,0 +1,95 @@
+---
+title: "Speed & Accuracy"
+description: "Questions about performance tuning and result quality"
+---
+
+Fine-tune the balance between response speed and match quality. Learn how to configure message analysis modes, intent filtering, and fallback behavior for your specific use case.
+
+<AccordionGroup>
+
+<Accordion title="What's the difference between message_analysis modes?">
+The `message_analysis` parameter controls how ChatAds extracts product keywords:
+
+| Mode | Speed | Quality | Use Case |
+|------|-------|---------|----------|
+| `fast` | ~50ms | Good | High-volume, latency-sensitive |
+| `balanced` | ~150ms | Better | Default, most use cases |
+| `thorough` | ~300ms | Best | Complex queries, premium traffic |
+
+`fast` uses NLP only. `balanced` and `thorough` use LLM with NLP fallback.
+</Accordion>
+
+<Accordion title="What does skip_message_analysis do?">
+When `skip_message_analysis: true`, ChatAds bypasses all NLP/LLM processing and uses your message content directly as the search query. This is useful when:
+
+- You've already extracted the product keyword
+- You want to search for a specific product name
+- You're building a product search feature (not analyzing conversation)
+
+Example: Instead of analyzing "I need headphones for running", you can send `message: "wireless running headphones"` with `skip_message_analysis: true`.
+</Accordion>
+
+<Accordion title="How does min_intent filtering work?">
+The `min_intent` parameter filters results by purchase intent score:
+
+| Level | Threshold | Description |
+|-------|-----------|-------------|
+| `any` | 0.0 | Return all matches (no filtering) |
+| `low` | 0.2 | Filter garbage/spam queries |
+| `medium` | 0.5 | Balanced quality and fill rate |
+| `high` | 0.7 | Premium, high-converting queries only |
+
+If a query's intent score is below your threshold, the API returns `matched: false` with `min_intent_required` showing the filter level.
+</Accordion>
+
+<Accordion title="What does fill_priority control?">
+The `fill_priority` parameter controls fallback behavior:
+
+- `coverage` (default) - Full resolution chain: Amazon PA-API → Google Shopping → no match
+- `speed` - Skips Google Shopping fallback for faster response
+
+Use `speed` when latency matters more than match rate. Use `coverage` when you want maximum affiliate link coverage.
+</Accordion>
+
+<Accordion title="The API is slow. How can I speed it up?">
+Try these optimizations:
+
+1. **Use `message_analysis: "fast"`** - NLP-only extraction (~50ms vs ~150ms)
+2. **Use `fill_priority: "speed"`** - Skip Google Shopping fallback
+3. **Use `skip_message_analysis: true`** - If you already know the product keyword
+4. **Cache responses** - Same queries return same results
+
+Expected latencies:
+- `fast` + `speed`: ~50-100ms
+- `balanced` + `coverage`: ~150-300ms
+- `thorough` + `coverage`: ~300-500ms
+</Accordion>
+
+<Accordion title="What fill rate should I expect?">
+Fill rate varies based on your traffic quality:
+
+- **Product-focused chatbots** (shopping assistants, product Q&A): 60-80%
+- **General-purpose chatbots** (customer support, general AI): 20-40%
+- **Mixed traffic**: 30-50%
+
+If your fill rate is lower than expected, check that messages contain clear product references and come from US, English-speaking users.
+</Accordion>
+
+<Accordion title="Are results deterministic? Does caching work?">
+Yes, results are deterministic for identical inputs. The same message with the same parameters will return the same affiliate link, making caching effective.
+
+However, results may change over time due to:
+- Product availability changes
+- Price fluctuations
+- New affiliate partnerships
+
+For most use cases, caching responses for 1-24 hours is safe and reduces API calls.
+</Accordion>
+
+<Accordion title="How fresh are the affiliate links and prices?">
+Affiliate links are resolved in real-time from Amazon PA-API and Google Shopping. Product availability and pricing reflect current data at the time of the request.
+
+Links remain valid for the product's lifetime, but prices shown in marketing messages may become stale. For price-sensitive applications, consider shorter cache durations or re-fetching periodically.
+</Accordion>
+
+</AccordionGroup>

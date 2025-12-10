@@ -1,0 +1,113 @@
+---
+title: "Integrations"
+description: "Questions about integrating ChatAds with your applications"
+---
+
+Get started with ChatAds in your application. This section covers API key setup, multi-platform usage, streaming integration patterns, and webhook alternatives.
+
+<AccordionGroup>
+
+<Accordion title="How do I get an API key?">
+1. Sign up at [app.getchatads.com](https://app.getchatads.com)
+2. Navigate to **Settings → API Keys**
+3. Click **Generate API Key**
+4. Copy your key (starts with `cak_`)
+
+Store your API key securely—it won't be shown again after generation.
+</Accordion>
+
+<Accordion title="Can I use ChatAds with multiple AI assistants?">
+Yes! Your API key works across any integration. Rate limits are per-team, shared across all API keys and integrations. Create multiple API keys in the dashboard if you need separate tracking for different projects.
+</Accordion>
+
+<Accordion title="How do I integrate with streaming responses?">
+For streaming AI responses, call ChatAds first:
+
+```typescript
+// 1. Get affiliate link before generating response
+const affiliate = await chatads.analyzeMessage({
+  message: userMessage
+});
+
+// 2. Include link in system prompt or append to response
+const systemPrompt = affiliate.data?.ad
+  ? `If relevant, recommend: ${affiliate.data.ad.product} - ${affiliate.data.ad.link}`
+  : '';
+
+// 3. Stream your AI response
+const stream = await ai.chat.completions.create({
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ],
+  stream: true
+});
+```
+</Accordion>
+
+<Accordion title="Is there a webhook for real-time events?">
+Not currently. ChatAds is a synchronous API—you send a request and receive an immediate response. For async workflows, use tools like n8n or Zapier to trigger actions based on API responses.
+</Accordion>
+
+<Accordion title="What can team Owners do?">
+Owners have full control over the team. They can manage all team settings, invite and remove members, create and revoke API keys, manage billing and payment methods, and delete the team. Each team must have at least one owner.
+</Accordion>
+
+<Accordion title="What can team Admins do?">
+Admins can manage team members (invite, change roles, remove), create and revoke API keys, edit rules and affiliate keys, use the API Explorer, and update team settings. However, they cannot manage billing, change payment methods, or delete the team.
+</Accordion>
+
+<Accordion title="What can team Members do?">
+Members have operational access—they can view and copy API keys, edit rules and affiliate keys, and use the API Explorer for testing. However, they cannot create or revoke API keys, invite other members, or change team settings. This role is ideal for developers who need to configure rules and test integrations without managing keys or team membership.
+</Accordion>
+
+<Accordion title="What can team Viewers do?">
+Viewers have read-only access to team resources. They can view usage metrics, billing information, team settings, and team members, but cannot see API keys or make any changes. Viewers cannot edit rules or use the API Explorer. This role is perfect for stakeholders like executives or finance team members who need visibility without edit permissions.
+</Accordion>
+
+<Accordion title="Can I change someone's team role?">
+Yes, if you're an Owner or Admin, you can change the role of any team member except other Owners. You cannot change your own role, and you cannot remove the last Owner from a team.
+</Accordion>
+
+<Accordion title="How do I invite team members?">
+Click the **Invite Member** button in the Team Members section. Enter their email address and select the role you want to assign them. They'll receive an email invitation to join your team.
+</Accordion>
+
+<Accordion title="How do I test if my integration is working correctly?">
+Use the [API Explorer](https://app.getchatads.com/api-explorer) in the dashboard to send test requests and see real responses. You can:
+
+1. Test different message types and parameters
+2. See the full request/response JSON
+3. Verify your configuration before writing code
+
+For automated testing, use your free tier quota or contact support for extended test limits.
+</Accordion>
+
+<Accordion title="Can I use ChatAds in development/staging environments?">
+Yes. We recommend creating separate API keys for dev/staging vs production:
+
+1. Go to **Settings → API Keys**
+2. Create a key named "Development" or "Staging"
+3. Use this key in your non-production environments
+
+All keys share your team's rate limits, but separate keys make it easier to track usage and revoke access if needed.
+</Accordion>
+
+<Accordion title="What's the difference between the SDKs vs calling the API directly?">
+The SDKs provide convenience wrappers around the REST API:
+
+**SDKs offer:**
+- Type-safe request/response handling
+- Automatic error parsing
+- Built-in retry logic
+- Simpler authentication setup
+
+**Direct API is better when:**
+- Your language doesn't have an official SDK
+- You need fine-grained control over requests
+- You're integrating with existing HTTP clients
+
+Both approaches have identical functionality—the SDKs just call the same REST endpoints.
+</Accordion>
+
+</AccordionGroup>

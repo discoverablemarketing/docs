@@ -1,0 +1,55 @@
+---
+title: "Security"
+description: "Questions about data privacy and API key security"
+---
+
+Learn how ChatAds handles your data and best practices for keeping your API keys secure in production environments.
+
+<AccordionGroup>
+
+<Accordion title="Is my data stored?">
+ChatAds processes messages in real-time and does not store message content after processing. We retain:
+
+- Usage logs (request counts, timestamps)
+- Error logs (for debugging, anonymized)
+- Team/account configuration
+
+See our [Privacy Policy](https://getchatads.com/privacy) for details.
+</Accordion>
+
+<Accordion title="How should I store my API key?">
+Never expose your API key in client-side code. Best practices:
+
+- Store in environment variables
+- Use server-side API routes
+- Rotate keys if exposed
+- Use separate keys for dev/prod
+
+```bash
+# .env (never commit this file)
+CHATADS_API_KEY=cak_your_api_key
+```
+</Accordion>
+
+<Accordion title="Is ChatAds SOC 2 compliant?">
+ChatAds is not currently SOC 2 certified. We follow security best practices including encrypted data transmission (TLS 1.3), secure API key storage, and minimal data retention.
+
+For enterprise customers with specific compliance requirements, contact support@getchatads.com to discuss your needs.
+</Accordion>
+
+<Accordion title="Can I use ChatAds with HIPAA-covered applications?">
+ChatAds is not HIPAA compliant and should not be used to process Protected Health Information (PHI). The API automatically strips PII from messages, but this doesn't meet HIPAA requirements.
+
+If you're building healthcare applications, ensure ChatAds only receives non-PHI content or contact us about enterprise compliance options.
+</Accordion>
+
+<Accordion title="Do you process or store end-user data?">
+ChatAds processes message content in real-time to extract product keywords but does not store the original messages after processing. We retain:
+
+- **Stored**: Usage counts, timestamps, error logs (anonymized), team configuration
+- **Not stored**: Original message content, user identifiers, conversation history
+
+Messages pass through our systems only for the duration of the API call. See our [Privacy Policy](https://getchatads.com/privacy) for complete details.
+</Accordion>
+
+</AccordionGroup>

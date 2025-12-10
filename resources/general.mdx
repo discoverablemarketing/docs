@@ -1,0 +1,76 @@
+---
+title: "General"
+description: "General questions about ChatAds"
+---
+
+Learn the basics of ChatAds—what it is, how it works, and what you can do with it. These questions cover the core concepts behind affiliate link insertion for AI chatbots.
+
+<AccordionGroup>
+
+<Accordion title="What is ChatAds?">
+ChatAds is an API that inserts relevant affiliate links into AI chatbot responses. When users ask about products (like "What's a good yoga mat?"), ChatAds analyzes the message, identifies product keywords, and returns affiliate links you can include in your AI's response.
+</Accordion>
+
+<Accordion title="How does ChatAds work?">
+ChatAds uses a three-stage pipeline:
+
+1. **Keyword Extraction** - NLP and/or LLM models identify product mentions in messages
+2. **Intent Scoring** - Each query receives a purchase intent score (0.0-1.0) to filter low-quality matches
+3. **Affiliate Resolution** - Product keywords are matched to affiliate links via Amazon PA-API and Google Shopping
+
+The API returns structured data including the product name, affiliate link, marketing message, and category.
+</Accordion>
+
+<Accordion title="What platforms does ChatAds support?">
+ChatAds works with any platform that can make HTTP requests:
+
+- **AI Chatbots** - Claude, GPT, Gemini, custom LLMs
+- **Chat Applications** - Customer support bots, product assistants
+- **Workflow Tools** - n8n, Zapier, Make
+- **Frameworks** - Next.js, Express, FastAPI, Flask, Django
+- **MCP Servers** - Claude Desktop, custom MCP implementations
+</Accordion>
+
+<Accordion title="What affiliate networks does ChatAds use?">
+ChatAds currently supports:
+
+- **Amazon Associates** - Via Amazon Product Advertising API (PA-API)
+- **Google Shopping** - Via Serper API fallback
+
+When Amazon PA-API doesn't find a match, ChatAds falls back to Google Shopping results (unless you set `fill_priority: "speed"`).
+</Accordion>
+
+<Accordion title="Why does ChatAds return only one winning ad?">
+To avoid overwhelming users with too many affiliate links, ChatAds returns only the single best-matching ad per request. This keeps the user experience clean and maximizes conversion rates.
+
+If you need multiple ads per request, contact support@getchatads.com to discuss enterprise options.
+</Accordion>
+
+<Accordion title="How does ChatAds determine the winning ad?">
+ChatAds uses a multi-factor ranking algorithm:
+
+1. **Keyword Extraction** - NLP/LLM identifies product mentions in the message
+2. **Product Matching** - Queries multiple affiliate partners (Amazon PA-API, Google Shopping)
+3. **Ranking** - Scores candidates based on:
+   - Relevance to the extracted keywords
+   - Commission rates and payout potential
+   - Historical conversion performance
+   - Product availability and pricing
+
+The highest-scoring result is returned as the winning ad.
+</Accordion>
+
+<Accordion title="What does ChatAds cost?">
+ChatAds offers usage-based pricing with no monthly minimums:
+
+- **Free tier** - 100 requests/month to test the API
+- **Paid tier** - Pay per request with volume discounts
+
+Add a credit card in [Billing](https://app.getchatads.com/settings/billing) to unlock unlimited requests. See our [Pricing page](https://getchatads.com/pricing) for current rates.
+</Accordion>
+
+<Accordion title="Is there a free trial or do I need a credit card to start?">
+No credit card required to start. Sign up and get 100 free requests per month immediately. This lets you fully test the API, try different configurations, and validate your integration before committing to paid usage.
+</Accordion>
+
+</AccordionGroup>

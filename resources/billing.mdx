@@ -1,0 +1,104 @@
+---
+title: "Billing"
+description: "Questions about billing, usage, and quotas"
+---
+
+Understand how ChatAds billing works, including usage monitoring, plan upgrades, and how different request types affect your quota.
+
+<AccordionGroup>
+
+<Accordion title="How do I monitor my usage?">
+Check usage in two ways:
+
+1. **Dashboard** - Visit [app.getchatads.com](https://app.getchatads.com) for real-time usage graphs
+2. **API Response** - Every response includes `meta.usage` with current counts:
+
+```json
+{
+  "meta": {
+    "usage": {
+      "monthly_requests": 250,
+      "daily_requests": 20,
+      "daily_limit": 100,
+      "is_free_tier": true
+    }
+  }
+}
+```
+</Accordion>
+
+<Accordion title="How do I upgrade my plan?">
+1. Go to [app.getchatads.com/settings/billing](https://app.getchatads.com/settings/billing)
+2. Select a higher tier
+3. Complete payment
+
+New limits take effect immediately.
+</Accordion>
+
+<Accordion title="Do blocked requests count against my quota?">
+No. Requests blocked by keyword rules or geo-restrictions do **not** count against your rate limits. Only successful processing attempts are counted.
+</Accordion>
+
+<Accordion title="What's the difference between All Requests, Billable Requests, and Filled Requests?">
+- **All Requests** = every request that hits the API, including those that fail validation, are rate limited, or are blocked by your filters
+- **Billable Requests** = requests that pass all validation and are analyzed for affiliate opportunities (these are billed)
+- **Filled Requests** = billable requests where we matched an affiliate ad
+
+Your fill rate = Filled ÷ Billable.
+</Accordion>
+
+<Accordion title="Why would I have more All Requests than Billable Requests?">
+This happens when requests are blocked before analysis. Common reasons:
+
+1. **Rate limit exceeded** (429 errors)
+2. **Keyword filtering** (blocked by your keyword rules)
+3. **Geo-filtering** (request from blocked country)
+4. **Invalid input** (message too short/long)
+
+These pre-filtered requests don't consume your quota and aren't billed.
+</Accordion>
+
+<Accordion title="How can I improve my fill rate?">
+Fill rate = Filled Requests ÷ Billable Requests. To improve it:
+
+1. **Send messages with clear product intent** (e.g., "looking for running shoes" vs. generic chat)
+2. **Avoid messages with mostly PII or blocked keywords** (they get sanitized and may become too short)
+3. **Ensure messages are in English and from US traffic** (we only match US, English content)
+4. **Keep messages under 5,000 characters** (longer messages are truncated internally)
+</Accordion>
+
+<Accordion title="Why are my limits just 100 requests?">
+The free tier includes 100 requests per month to let you test the API. To remove this limit and get usage-based pricing, add a valid credit card in [Billing](https://app.getchatads.com/settings/billing). You'll only be charged for what you use—no monthly minimums.
+</Accordion>
+
+<Accordion title="What's the pricing per request?">
+ChatAds uses tiered pricing with volume discounts. The more you use, the less you pay per request. See our [Pricing page](https://getchatads.com/pricing) for current rates.
+
+Billing is based on **billable requests** only—requests that pass validation and are analyzed for affiliate matching. Failed requests, rate-limited requests, and blocked requests don't count toward billing.
+</Accordion>
+
+<Accordion title="When am I charged - monthly or per request?">
+ChatAds bills monthly for accumulated usage. At the end of each billing cycle, you're charged for all billable requests made during that period. There are no upfront costs or monthly minimums—you only pay for what you use.
+</Accordion>
+
+<Accordion title="Can I set a spending limit or budget cap?">
+Not currently in the dashboard, but you can:
+
+1. **Monitor usage** in real-time via the dashboard or API responses
+2. **Set up alerts** by tracking the `meta.usage` field in API responses
+3. **Contact support** for custom spending limits on enterprise plans
+
+We're working on built-in budget controls for a future release.
+</Accordion>
+
+<Accordion title="What happens if my payment fails?">
+If a payment fails:
+
+1. You'll receive an email notification
+2. A banner appears in the dashboard prompting you to update your payment method
+3. You have a grace period to resolve the issue before service is affected
+
+Update your payment method at [Billing](https://app.getchatads.com/settings/billing) to avoid interruption.
+</Accordion>
+
+</AccordionGroup>

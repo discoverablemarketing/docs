@@ -1,0 +1,72 @@
+---
+title: "Errors"
+description: "Common error codes and how to resolve them"
+---
+
+Diagnose and fix common API errors. This section explains authentication failures, forbidden access, and why requests might return no matches.
+
+<AccordionGroup>
+
+<Accordion title="I'm getting UNAUTHORIZED (401) errors">
+This means no API key was provided. Check that you're including the `x-api-key` header:
+
+```bash
+curl -X POST 'https://chatads--chatads-api-fastapiserver-serve.modal.run/v1/chatads/messages' \
+  -H 'x-api-key: cak_your_api_key' \
+  -H 'Content-Type: application/json' \
+  -d '{"message": "test"}'
+```
+
+Common issues:
+- Header name should be `x-api-key`
+- Don't include "Bearer" prefix—just the key itself
+</Accordion>
+
+<Accordion title="I'm getting FORBIDDEN (403) errors">
+This means your API key is invalid or disabled. Verify:
+
+1. The key starts with `cak_`
+2. It hasn't been revoked in the dashboard
+3. Your team account is active
+
+Generate a new key at [app.getchatads.com/settings/api-keys](https://app.getchatads.com/settings/api-keys).
+</Accordion>
+
+<Accordion title="My message returns matched: false. Why?">
+Several reasons can cause no match:
+
+1. **No product detected** - The message doesn't contain a clear product reference
+2. **Intent too low** - The query's intent score is below your `min_intent` threshold
+3. **No affiliate available** - The product exists but has no affiliate link
+4. **Blocked keyword** - Your team has a keyword rule blocking this content
+5. **Message too short** - After removing PII and blocked keywords, fewer than 2 words remain
+6. **Non-US/non-English** - Traffic from outside the US or in a non-English language
+
+**Technical note:** The API requires 2+ words before processing. After sanitization (removing PII, URLs, blocked keywords), messages may become too short for product extraction even if they started longer.
+
+Check the `reason` field in the response for specifics.
+</Accordion>
+
+<Accordion title="What does 'message too short' mean exactly?">
+ChatAds requires at least 2 words after sanitization to extract product keywords. Sanitization removes:
+
+- PII (emails, phone numbers, SSNs, credit card numbers)
+- URLs and links
+- Blocked keywords from your rules
+
+A message like "Buy this: user@email.com" becomes just "Buy this:" after sanitization—too short to process. Send messages with clear product context to avoid this error.
+</Accordion>
+
+<Accordion title="Why would a product query return no affiliate link?">
+Even valid product queries may return `matched: false` because:
+
+1. **Niche products** - Not available through Amazon or Google Shopping
+2. **Generic terms** - "Good laptop" is harder to match than "MacBook Pro M3"
+3. **Services vs products** - Software subscriptions, services, or digital goods may not have affiliate links
+4. **Regional products** - Items only available outside the US
+5. **Temporarily unavailable** - Product out of stock or delisted
+
+Try more specific product names or brands for better match rates.
+</Accordion>
+
+</AccordionGroup>

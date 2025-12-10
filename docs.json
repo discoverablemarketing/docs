@@ -51,7 +51,15 @@
           {
             "group": "Resources",
             "pages": [
-              "faq"
+              "resources/general",
+              "resources/integrations",
+              "resources/billing",
+              "resources/speed-accuracy",
+              "resources/rate-limiting",
+              "resources/errors",
+              "resources/troubleshooting",
+              "resources/targeting",
+              "resources/security"
             ]
           }
         ]

@@ -1,0 +1,74 @@
+---
+title: "Rate Limiting"
+description: "Questions about rate limits and quotas"
+---
+
+Understand ChatAds rate limits by plan tier, what happens when you exceed them, and how to implement graceful error handling with exponential backoff.
+
+<AccordionGroup>
+
+<Accordion title="What are the rate limits?">
+Rate limits are per-team and shared across all API keys:
+
+| Plan | Monthly Limit | Daily Limit |
+|------|---------------|-------------|
+| Free | 100 requests | 10 requests |
+| Starter | 5,000 requests | 500 requests |
+| Pro | 50,000 requests | 5,000 requests |
+| Enterprise | Custom | Custom |
+
+Limits reset at midnight UTC (daily) and the 1st of each month (monthly).
+</Accordion>
+
+<Accordion title="What happens when I hit a rate limit?">
+You'll receive a `429` error with details:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DAILY_QUOTA_EXCEEDED",
+    "message": "Daily request limit exceeded.",
+    "details": {
+      "daily_limit": 100,
+      "daily_usage": 101
+    }
+  }
+}
+```
+
+The response includes a `Retry-After` header with seconds until reset.
+</Accordion>
+
+<Accordion title="How do I handle rate limit errors gracefully?">
+Implement exponential backoff:
+
+```typescript
+async function analyzeWithRetry(message: string, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await client.analyzeMessage({ message });
+
+    if (response.success) return response;
+
+    if (response.error?.code === 'DAILY_QUOTA_EXCEEDED') {
+      // Wait until tomorrow - don't retry
+      throw new Error('Daily limit reached');
+    }
+
+    if (response.error?.code === 'RATE_LIMIT_EXCEEDED') {
+      // Exponential backoff: 1s, 2s, 4s
+      await sleep(1000 * Math.pow(2, i));
+      continue;
+    }
+
+    throw new Error(response.error?.message);
+  }
+}
+```
+</Accordion>
+
+<Accordion title="What are Amazon's API rate limits?">
+Amazon's Product Advertising API has strict limits: 1 request per second initially. As you drive sales through affiliate links, this can increase to 10 requests per second. ChatAds handles this internally, but high-volume users should optimize their calls to avoid hitting these upstream limits.
+</Accordion>
+
+</AccordionGroup>

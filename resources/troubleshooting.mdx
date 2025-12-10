@@ -1,0 +1,51 @@
+---
+title: "Troubleshooting"
+description: "Tips for testing and debugging your integration"
+---
+
+Practical tips for testing and debugging your ChatAds integration, including development best practices and message length considerations.
+
+<AccordionGroup>
+
+<Accordion title="Can I test the API without using my quota?">
+The free tier provides 100 requests/month for testing. For development, you can:
+
+1. Use the [API Explorer](https://app.getchatads.com/api-explorer) in the dashboard
+2. Cache responses during development
+3. Contact support@getchatads.com for extended testing quotas
+</Accordion>
+
+<Accordion title="What's the maximum message length?">
+Messages can be 1-5,000 characters. Longer messages return `MESSAGE_TOO_LONG` (400).
+
+**Note:** Messages longer than 100 words are automatically truncated before NLP processing. This happens internally and won't cause an error—you can send longer messages, but only the first ~100 words are analyzed for product keywords.
+
+For best results, send the relevant portion of the conversation—typically the user's last message or the product-related context.
+</Accordion>
+
+<Accordion title="How do I debug why a specific message didn't match?">
+Check the API response for clues:
+
+1. **`reason` field** - Explains why `matched: false` (e.g., "no product detected", "intent too low")
+2. **`meta.intent_score`** - Shows the calculated purchase intent (0.0-1.0)
+3. **`meta.keywords`** - Shows what product keywords were extracted (if any)
+
+Use the [API Explorer](https://app.getchatads.com/api-explorer) to test variations of your message and see how different phrasings affect results.
+</Accordion>
+
+<Accordion title="Is there a way to see what keywords were extracted from my message?">
+Yes, the API response includes extracted keywords in the `meta` object:
+
+```json
+{
+  "meta": {
+    "keywords": ["wireless headphones", "noise canceling"],
+    "intent_score": 0.85
+  }
+}
+```
+
+This helps you understand how ChatAds interpreted your message and debug matching issues. If keywords look wrong, try rephrasing the message or using `skip_message_analysis: true` with your own keywords.
+</Accordion>
+
+</AccordionGroup>

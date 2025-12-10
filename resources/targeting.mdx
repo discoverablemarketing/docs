@@ -1,0 +1,74 @@
+---
+title: "Targeting"
+description: "Questions about geo-targeting and content filtering"
+---
+
+Control which traffic receives affiliate links. Learn how to set up geo-targeting, handle international users, and block specific keywords or product categories.
+
+<AccordionGroup>
+
+<Accordion title="How do I set up geo-targeting?">
+Pass the `country` parameter with an ISO 3166-1 alpha-2 code:
+
+```json
+{
+  "message": "Best running shoes",
+  "country": "US"
+}
+```
+
+ChatAds uses this for:
+- Localized affiliate links (amazon.com vs amazon.de)
+- Country-specific product availability
+- Geo-restriction enforcement (if configured)
+
+You can also pass `ip` for automatic geo-detection.
+
+**Recommendation:** ChatAds currently only matches US, English traffic. Passing `ip` or `country` lets you filter non-qualifying traffic before making API calls, saving your request quota and avoiding partner API throttling. If you already know the user's country, pass `country` directly; otherwise pass `ip` for auto-detection.
+</Accordion>
+
+<Accordion title="What happens if I send non-US or non-English traffic?">
+The API returns `success: true` but `matched: false` with a reason explaining why no ad was matched:
+
+```json
+{
+  "success": true,
+  "matched": false,
+  "reason": "non-US IP detected"
+}
+```
+
+Common reasons include:
+- `"non-US IP detected"` - Request originated from outside the United States
+- `"non-English message"` - Message language detected as non-English
+
+While these requests succeed (no error), they won't match ads and still count toward your rate limit. **Recommendation:** Filter non-qualifying traffic client-side before calling the API to maximize your quota efficiency.
+</Accordion>
+
+<Accordion title="Can I block certain keywords or products?">
+Yes! Configure keyword rules in the dashboard:
+
+1. Go to [app.getchatads.com/settings/rules](https://app.getchatads.com/settings/rules)
+2. Add blocked keywords
+3. Optionally set a custom rejection message
+
+Blocked requests return `CONTENT_BLOCKED` (422) and don't count against your quota.
+</Accordion>
+
+<Accordion title="Will ChatAds expand to other countries besides US?">
+Currently, ChatAds only supports US affiliate partners (Amazon.com Associates). International expansion is on our roadmap, with UK and EU markets planned for future releases.
+
+If you have specific country requirements, contact support@getchatads.com to discuss timeline and priorities.
+</Accordion>
+
+<Accordion title="Can I target specific product categories?">
+Not directly via API parameters, but you can influence results through:
+
+1. **Message content** - More specific product queries yield more relevant matches
+2. **Keyword rules** - Block unwanted categories using ignored/blocked keywords
+3. **Intent filtering** - Use `min_intent` to filter low-quality matches
+
+For category-specific affiliate programs or custom matching logic, contact support about enterprise options.
+</Accordion>
+
+</AccordionGroup>

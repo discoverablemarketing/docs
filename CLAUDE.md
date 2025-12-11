@@ -168,3 +168,40 @@ To add a new page:
 - Intent scoring documentation
 - `skip_message_analysis` parameter documentation
 - Response schema completeness
+
+## Support Docs Compilation
+
+The `/docs` content is compiled into a single text file for use by the support chatbot.
+
+### Script Location
+`/docs/scripts/compile-support-docs.py`
+
+### How to Run
+```bash
+cd /Users/chrisshuptrine/Downloads/github/docs/scripts
+python compile-support-docs.py
+```
+
+### What It Does
+1. Finds all `.mdx` files in `/docs` (excludes `/docs/snippets/`)
+2. Extracts titles from YAML frontmatter
+3. Strips frontmatter and MDX/JSX components (`<Card/>`, `<Warning>`, etc.)
+4. Cleans whitespace while preserving code blocks
+5. Outputs to `/marketing/support-docs.txt`
+
+### Data Flow
+```
+/docs/**/*.mdx → compile-support-docs.py → /marketing/support-docs.txt
+                                                    ↓
+                                    https://www.getchatads.com/support-docs.txt
+                                                    ↓
+                                    support-chat edge function (fetches + caches)
+```
+
+### When to Run
+Run this script manually after making changes to documentation that should be reflected in the support chatbot. The output file is committed to git and served publicly.
+
+### Related Files
+- **Script**: `/docs/scripts/compile-support-docs.py`
+- **Output**: `/marketing/support-docs.txt` (~62KB)
+- **Consumer**: `/supabase/functions/support-chat/index.ts`

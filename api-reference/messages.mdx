@@ -26,9 +26,9 @@ Analyzes a user message to extract product keywords and return relevant affiliat
 
 <ParamField body="message_analysis" type="string" default="balanced">
   Controls keyword extraction method:
-  - `fast` - NLP-only extraction (~50ms)
-  - `balanced` - Hybrid NLP/LLM approach (~150ms)
-  - `thorough` - Deeper LLM extraction (~300ms)
+  - `fast` - Lightweight model extraction (~50ms)
+  - `balanced` - Hybrid approach (~150ms)
+  - `thorough` - Deeper extraction (~300ms)
 </ParamField>
 
 <ParamField body="fill_priority" type="string" default="coverage">
@@ -46,7 +46,7 @@ Analyzes a user message to extract product keywords and return relevant affiliat
 </ParamField>
 
 <ParamField body="skip_message_analysis" type="boolean" default="false">
-  When `true`, skips NLP/LLM extraction and uses the message content directly as the search query.
+  When `true`, skips keyword extraction and uses the message content directly as the search query.
   This bypasses `message_analysis`, `fill_priority`, and `min_intent` settings.
 </ParamField>
 

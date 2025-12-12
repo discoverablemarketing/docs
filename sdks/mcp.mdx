@@ -80,10 +80,10 @@ The main MCP tool for fetching affiliate product recommendations.
 - `message` (required): The user message to analyze (1-5000 chars)
 - `ip` (optional): Client IP address for geo-detection (max 64 chars)
 - `country` (optional): ISO 3166-1 alpha-2 country code (e.g., "US", "GB"). Skips IP detection if provided.
-- `message_analysis` (optional): Keyword extraction method. Options: `"fast"` (NLP ~50ms), `"balanced"` (default ~150ms), `"thorough"` (LLM ~300ms)
+- `message_analysis` (optional): Keyword extraction method. Options: `"fast"` (lightweight ~50ms), `"balanced"` (default ~150ms), `"thorough"` (~300ms)
 - `fill_priority` (optional): URL resolution. Options: `"speed"` (skip fallback), `"coverage"` (default, full chain)
 - `min_intent` (optional): Minimum purchase intent. Options: `"any"`, `"low"` (default), `"medium"`, `"high"`
-- `skip_message_analysis` (optional): Skip NLP/LLM and use message directly as search query. Default: `false`
+- `skip_message_analysis` (optional): Skip keyword extraction and use message directly as search query. Default: `false`
 
 **Example Usage in Claude Desktop:**
 

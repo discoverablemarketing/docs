@@ -16,11 +16,11 @@ The `message_analysis` parameter controls how ChatAds extracts product keywords:
 | `balanced` | ~150ms | Better | Default, most use cases |
 | `thorough` | ~300ms | Best | Complex queries, premium traffic |
 
-`fast` uses NLP only. `balanced` and `thorough` use LLM with NLP fallback.
+`fast` uses a lightweight model. `balanced` and `thorough` use deeper extraction with fallback.
 </Accordion>
 
 <Accordion title="What does skip_message_analysis do?">
-When `skip_message_analysis: true`, ChatAds bypasses all NLP/LLM processing and uses your message content directly as the search query. This is useful when:
+When `skip_message_analysis: true`, ChatAds bypasses keyword extraction and uses your message content directly as the search query. This is useful when:
 
 - You've already extracted the product keyword
 - You want to search for a specific product name
@@ -45,8 +45,8 @@ If a query's intent score is below your threshold, the API returns `matched: fal
 <Accordion title="What does fill_priority control?">
 The `fill_priority` parameter controls fallback behavior:
 
-- `coverage` (default) - Full resolution chain: Amazon PA-API → Google Shopping → no match
-- `speed` - Skips Google Shopping fallback for faster response
+- `coverage` (default) - Full resolution chain with fallback sources
+- `speed` - Skips fallback sources for faster response
 
 Use `speed` when latency matters more than match rate. Use `coverage` when you want maximum affiliate link coverage.
 </Accordion>
@@ -54,8 +54,8 @@ Use `speed` when latency matters more than match rate. Use `coverage` when you w
 <Accordion title="The API is slow. How can I speed it up?">
 Try these optimizations:
 
-1. **Use `message_analysis: "fast"`** - NLP-only extraction (~50ms vs ~150ms)
-2. **Use `fill_priority: "speed"`** - Skip Google Shopping fallback
+1. **Use `message_analysis: "fast"`** - Lightweight extraction (~50ms vs ~150ms)
+2. **Use `fill_priority: "speed"`** - Skip fallback sources
 3. **Use `skip_message_analysis: true`** - If you already know the product keyword
 4. **Cache responses** - Same queries return same results
 
@@ -87,7 +87,7 @@ For most use cases, caching responses for 1-24 hours is safe and reduces API cal
 </Accordion>
 
 <Accordion title="How fresh are the affiliate links and prices?">
-Affiliate links are resolved in real-time from Amazon PA-API and Google Shopping. Product availability and pricing reflect current data at the time of the request.
+Affiliate links are resolved in real-time from our affiliate partners. Product availability and pricing reflect current data at the time of the request.
 
 Links remain valid for the product's lifetime, but prices shown in marketing messages may become stale. For price-sensitive applications, consider shorter cache durations or re-fetching periodically.
 </Accordion>

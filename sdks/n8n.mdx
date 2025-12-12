@@ -60,9 +60,9 @@ Then restart n8n to load the new node.
 
 <ParamField body="message_analysis" type="string" default="balanced">
   Keyword extraction method:
-  - `fast` — NLP only (~50ms)
-  - `balanced` — Hybrid NLP/LLM (~150ms)
-  - `thorough` — Deep LLM (~300ms)
+  - `fast` — Lightweight model (~50ms)
+  - `balanced` — Hybrid approach (~150ms)
+  - `thorough` — Deep extraction (~300ms)
 </ParamField>
 
 <ParamField body="fill_priority" type="string" default="coverage">
@@ -80,7 +80,7 @@ Then restart n8n to load the new node.
 </ParamField>
 
 <ParamField body="skip_message_analysis" type="boolean" default="false">
-  When `true`, uses message directly as search query without NLP/LLM processing.
+  When `true`, uses message directly as search query without keyword extraction.
 </ParamField>
 
 ### Advanced Settings

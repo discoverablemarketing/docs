@@ -14,9 +14,9 @@ ChatAds is an API that inserts relevant affiliate links into AI chatbot response
 <Accordion title="How does ChatAds work?">
 ChatAds uses a three-stage pipeline:
 
-1. **Keyword Extraction** - NLP and/or LLM models identify product mentions in messages
+1. **Keyword Extraction** - AI models identify product mentions in messages
 2. **Intent Scoring** - Each query receives a purchase intent score (0.0-1.0) to filter low-quality matches
-3. **Affiliate Resolution** - Product keywords are matched to affiliate links via Amazon PA-API and Google Shopping
+3. **Affiliate Resolution** - Product keywords are matched to affiliate links via multiple affiliate partners
 
 The API returns structured data including the product name, affiliate link, marketing message, and category.
 </Accordion>
@@ -35,9 +35,9 @@ ChatAds works with any platform that can make HTTP requests:
 ChatAds currently supports:
 
 - **Amazon Associates** - Via Amazon Product Advertising API (PA-API)
-- **Google Shopping** - Via Serper API fallback
+- **Additional affiliate partners** - Fallback sources for broader product coverage
 
-When Amazon PA-API doesn't find a match, ChatAds falls back to Google Shopping results (unless you set `fill_priority: "speed"`).
+When Amazon PA-API doesn't find a match, ChatAds falls back to additional sources (unless you set `fill_priority: "speed"`).
 </Accordion>
 
 <Accordion title="Why does ChatAds return only one winning ad?">
@@ -49,8 +49,8 @@ If you need multiple ads per request, contact support@getchatads.com to discuss 
 <Accordion title="How does ChatAds determine the winning ad?">
 ChatAds uses a multi-factor ranking algorithm:
 
-1. **Keyword Extraction** - NLP/LLM identifies product mentions in the message
-2. **Product Matching** - Queries multiple affiliate partners (Amazon PA-API, Google Shopping)
+1. **Keyword Extraction** - AI identifies product mentions in the message
+2. **Product Matching** - Queries multiple affiliate partners
 3. **Ranking** - Scores candidates based on:
    - Relevance to the extracted keywords
    - Commission rates and payout potential

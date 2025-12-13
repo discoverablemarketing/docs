@@ -5,6 +5,31 @@ description: "Common error codes and how to resolve them"
 
 Diagnose and fix common API errors. This section explains authentication failures, forbidden access, and why requests might return no matches.
 
+## Error Codes Reference
+
+Every ChatAds error response includes a `code` field. Here's the complete list:
+
+| Code | HTTP Status | Description | Resolution |
+|------|-------------|-------------|------------|
+| `UNAUTHORIZED` | 401 | No API key provided | Add `x-api-key` header |
+| `FORBIDDEN` | 403 | Invalid API key | Check key in Settings → API Keys |
+| `API_KEY_DISABLED` | 403 | API key disabled | Re-enable in dashboard or create new key |
+| `INVALID_INPUT` | 400 | Empty or malformed request | Check request body format |
+| `MESSAGE_TOO_LONG` | 400 | Message exceeds 5000 characters | Trim message content |
+| `CONTENT_BLOCKED` | 422 | Blocked keyword detected | Review blocked keywords in Settings |
+| `GEO_BLOCKED` | 422 | Country not allowed | Update geo restrictions |
+| `NO_AFFILIATE_CREDENTIALS` | 422 | No affiliate credentials configured | Add Amazon API key or affiliate tag in Settings → Integrations |
+| `DAILY_QUOTA_EXCEEDED` | 429 | Daily limit reached | Wait for reset at midnight UTC |
+| `QUOTA_EXCEEDED` | 429 | Monthly limit reached | Upgrade plan |
+| `INTERNAL_ERROR` | 500 | Server error | Retry or contact support |
+| `RATE_LIMIT_UNAVAILABLE` | 503 | Rate limiter temporarily down | Retry in a few seconds |
+
+<Tip>
+Error responses don't count against your quota (except `DAILY_QUOTA_EXCEEDED` and `QUOTA_EXCEEDED`).
+</Tip>
+
+## Common Questions
+
 <AccordionGroup>
 
 <Accordion title="I'm getting UNAUTHORIZED (401) errors">

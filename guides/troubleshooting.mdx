@@ -158,6 +158,27 @@ const message = userMessage.slice(0, 5000);
 3. This request does NOT count against your quota
 </Accordion>
 
+<Accordion title="NO_AFFILIATE_CREDENTIALS (422)" icon="link-slash">
+**Cause:** No affiliate credentials configured for your team.
+
+**Response details:**
+```json
+{
+  "error": {
+    "code": "NO_AFFILIATE_CREDENTIALS",
+    "message": "No affiliate credentials configured"
+  }
+}
+```
+
+**Solution:**
+Configure at least one of these in Settings → Integrations:
+1. **Amazon PA-API Key** - For direct Amazon Product Advertising API access
+2. **Amazon Affiliate Tag** - For appending your affiliate tag to Amazon URLs
+
+Without affiliate credentials, ChatAds cannot generate monetizable links.
+</Accordion>
+
 </AccordionGroup>
 
 ### Rate Limit Errors
@@ -194,14 +215,14 @@ if (response.error?.code === 'DAILY_QUOTA_EXCEEDED') {
 ```
 </Accordion>
 
-<Accordion title="MONTHLY_QUOTA_EXCEEDED (429)" icon="calendar">
+<Accordion title="QUOTA_EXCEEDED (429)" icon="calendar">
 **Cause:** Monthly request limit reached (free tier only).
 
 **Response details:**
 ```json
 {
   "error": {
-    "code": "MONTHLY_QUOTA_EXCEEDED",
+    "code": "QUOTA_EXCEEDED",
     "details": {
       "monthly_usage": 101,
       "monthly_cap": 100,
@@ -214,31 +235,6 @@ if (response.error?.code === 'DAILY_QUOTA_EXCEEDED') {
 **Solution:**
 - Wait until the 1st of next month
 - Upgrade to a paid plan (unlimited monthly)
-</Accordion>
-
-<Accordion title="RATE_LIMIT_EXCEEDED (429)" icon="gauge-high">
-**Cause:** Too many requests per minute.
-
-**Solution:**
-Implement exponential backoff:
-
-```typescript
-async function withRetry(fn: () => Promise<any>, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    const result = await fn();
-
-    if (result.success) return result;
-
-    if (result.error?.code === 'RATE_LIMIT_EXCEEDED') {
-      const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
-      await new Promise(r => setTimeout(r, delay));
-      continue;
-    }
-
-    throw new Error(result.error?.message);
-  }
-}
-```
 </Accordion>
 
 </AccordionGroup>
@@ -262,23 +258,48 @@ if (response.error?.code === 'INTERNAL_ERROR') {
 ```
 </Accordion>
 
-<Accordion title="SERVICE_UNAVAILABLE (503)" icon="plug-circle-xmark">
-**Cause:** Service temporarily unavailable.
-
-**Solution:**
-- Retry after 30-60 seconds
-- Check status page for maintenance windows
-- This is typically brief (< 5 minutes)
-</Accordion>
-
 <Accordion title="RATE_LIMIT_UNAVAILABLE (503)" icon="database">
 **Cause:** Rate limiting backend temporarily unavailable.
 
 **Solution:**
-This is rare and usually resolves within seconds. Retry with backoff.
+- Retry after a few seconds with exponential backoff
+- This is rare and typically resolves quickly
+- Check [status.getchatads.com](https://status.getchatads.com) if persistent
 </Accordion>
 
 </AccordionGroup>
+
+---
+
+## Understanding the "reason" Field
+
+When `success: true` but `data.filled: false`, the `reason` field explains why no affiliate link was inserted. This is a "soft failure"—the API processed the request successfully, but couldn't generate an affiliate link.
+
+| Reason | Meaning | Action |
+|--------|---------|--------|
+| `below_intent_threshold` | Keyword found but intent score too low for your `min_intent` setting | Lower `min_intent` parameter or use clearer purchase language |
+| `no_affiliate_link_found` | Product detected but no affiliate link available | Product may not be on supported retailers |
+
+**Example response with reason:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "matched": true,
+    "filled": false,
+    "keyword": "wireless headphones",
+    "reason": "below_intent_threshold",
+    "intent_score": 0.15,
+    "intent_level": "very_low",
+    "min_intent_required": "medium"
+  }
+}
+```
+
+<Note>
+The `reason` field is only present when `filled: false`. When `filled: true`, the affiliate link was successfully generated.
+</Note>
 
 ---
 
@@ -306,14 +327,22 @@ This is rare and usually resolves within seconds. Retry with backoff.
    // Check if intent was filtered
    {
      "data": {
-       "matched": false,
-       "reason": "Intent score below threshold",
+       "matched": true,
+       "filled": false,
+       "reason": "below_intent_threshold",
+       "intent_score": 0.15,
        "min_intent_required": "medium"
      }
    }
    ```
 
 3. **No affiliate available** - Product identified but no affiliate link exists
+
+4. **Message too short** - After sanitization (removing PII, URLs, blocked keywords), fewer than 2 words remain
+   ```json
+   // Example: "Buy this: user@email.com" becomes just "Buy this:" after sanitization
+   // The API requires at least 2 words to extract product keywords
+   ```
 
 **Solutions:**
 - Lower `min_intent` (try `"any"` for testing)
